@@ -198,10 +198,10 @@ CvRect DetectorThread::detectFaces(IplImage *img){
             maxwidth = r->width;
             max = i;
         }
-        /*cvRectangle( img,
+        cvRectangle( img,
                      cvPoint( r->x, r->y ),
                      cvPoint( r->x + r->width, r->y + r->height ),
-                     CV_RGB( 255, 0, 0 ), 1, 8, 0 );*/
+                     CV_RGB( 255, 0, 0 ), 1, 8, 0 );
     }
 
     CvRect *maxFace = (CvRect*)cvGetSeqElem( faces, max );

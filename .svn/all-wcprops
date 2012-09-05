@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/jantan_emotionrecognition/!svn/ver/1
+END
+fit.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/jantan_emotionrecognition/!svn/ver/3/fit.h
+END
+structures.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/jantan_emotionrecognition/!svn/ver/1/structures.h
+END
+EmotionRecognition.pro
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/jantan_emotionrecognition/!svn/ver/2/EmotionRecognition.pro
+END
+capturethread.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/jantan_emotionrecognition/!svn/ver/5/capturethread.cpp
+END
+capturethread.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/jantan_emotionrecognition/!svn/ver/4/capturethread.h
+END
+detectorthread.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/jantan_emotionrecognition/!svn/ver/4/detectorthread.cpp
+END
+detectorthread.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/jantan_emotionrecognition/!svn/ver/4/detectorthread.h
+END
+EmotionRecognition.pro.user
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/jantan_emotionrecognition/!svn/ver/4/EmotionRecognition.pro.user
+END
+mainwindow.ui
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jantan_emotionrecognition/!svn/ver/4/mainwindow.ui
+END
+controlthread.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/jantan_emotionrecognition/!svn/ver/4/controlthread.cpp
+END
+hid.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/jantan_emotionrecognition/!svn/ver/1/hid.h
+END
+OpenCV-proba.pro
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/jantan_emotionrecognition/!svn/ver/1/OpenCV-proba.pro
+END
+mainwindow.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/jantan_emotionrecognition/!svn/ver/4/mainwindow.cpp
+END
+controlthread.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/jantan_emotionrecognition/!svn/ver/4/controlthread.h
+END
+rawhid_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jantan_emotionrecognition/!svn/ver/1/rawhid_test.c
+END
+mainwindow.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/jantan_emotionrecognition/!svn/ver/4/mainwindow.h
+END
+hid_LINUX.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/jantan_emotionrecognition/!svn/ver/1/hid_LINUX.c
+END
+main.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/jantan_emotionrecognition/!svn/ver/4/main.cpp
+END
