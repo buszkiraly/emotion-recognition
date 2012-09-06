@@ -162,8 +162,7 @@ void DetectorThread::run(){
 
 void DetectorThread::sendImage(){
     if (!frameToShow) return;
-    IplImage *frameToSend = new IplImage;
-    frameToSend = cvCreateImage( cvSize(frameToShow->width , frameToShow->height ), frameToShow->depth, frameToShow->nChannels );
+    IplImage *frameToSend = cvCreateImage( cvSize(frameToShow->width , frameToShow->height ), frameToShow->depth, frameToShow->nChannels );
     cvCopy(frameToShow, frameToSend);
     cvReleaseImage(&frameToShow);
     waitForImage = true;
@@ -355,6 +354,8 @@ void DetectorThread::processFrame(){
         return;
     }
 
+    cout<<"process"<<endl;
+
     IplImage* frameToAAM = cvCreateImage(cvGetSize(frame),frame->depth,frame->nChannels);
 
     if (frameToShow) cvReleaseImage(&frameToShow);
@@ -372,6 +373,7 @@ void DetectorThread::processFrame(){
     }else{
 
         fitMutex.lock();
+        cout<<"process begin"<<endl;
 
         emit faceDetected(true);
 
@@ -381,8 +383,6 @@ void DetectorThread::processFrame(){
 
         if (black){
             cvSetZero(frameToShow);
-        }else{
-            //cvCopy( frameToAAM, frame, NULL );
         }
 
         vnl_vector<double> s;
@@ -432,8 +432,11 @@ void DetectorThread::processFrame(){
             //drawAnnotationLines(frameToShow,s);
         }
 
-        fitMutex.unlock();
-        cvReleaseImage(&frameToAAM);
+          cvReleaseImage(&frameToAAM);
+
+          cout<<"process end"<<endl;
+          fitMutex.unlock();
+
 }
 
 void DetectorThread::paramsChanged(params newParams){
@@ -520,9 +523,11 @@ void DetectorThread::loadModelA(QString model){
 
 void DetectorThread::loadModelB(QString model){
 
-    cout<<"LoadModelB"<<endl;
+
 
     fitMutex.lock();
+
+        cout<<"LoadModelB begin"<<endl;
 try{
     free(guiB);
     }catch(...){
@@ -561,6 +566,8 @@ try{
     guiB->SetMaxIter(maxIter());
     guiB->SetDecIter(iterDec());
     guiB->SetFitFlag(flag());
+
+    cout<<"LoadModelB end"<<endl;
 
     fitMutex.unlock();
 }

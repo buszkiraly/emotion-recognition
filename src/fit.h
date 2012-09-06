@@ -44,6 +44,8 @@ public:
 		  vcl_string imFname,int filter,
           bool ascii){
 
+      __cvDarkImage = NULL;
+
       fname = fnames;
       ascii_ = ascii;
     _flag = 0;
@@ -137,7 +139,7 @@ public:
                     __cvImage->nChannels*__cvImage->width,1);
       __cleanImage.deep_copy(__drawImage);
 
-      cvReleaseImage(&__cvDarkImage);
+      if (__cvDarkImage) cvReleaseImage(&__cvDarkImage);
       __cvDarkImage = cvCreateImage( cvGetSize(frame), frame->depth,frame->nChannels);
       cvSetZero(__cvDarkImage);
       __darkImage.set_to_memory((vxl_byte*)__cvDarkImage->imageData,
@@ -172,7 +174,7 @@ public:
                   __cvImage->nChannels*__cvImage->width,1);
     __cleanImage.deep_copy(__drawImage);
 
-    cvReleaseImage(&__cvDarkImage);
+    if (__cvDarkImage) cvReleaseImage(&__cvDarkImage);
     __cvDarkImage = cvCreateImage( cvGetSize(frame), frame->depth,frame->nChannels);
     cvSetZero(__cvDarkImage);
     __darkImage.set_to_memory((vxl_byte*)__cvDarkImage->imageData,

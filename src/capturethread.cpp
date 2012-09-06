@@ -329,15 +329,14 @@ void CaptureThread::forward(){
 
 void CaptureThread::sendImage(){
 
-    IplImage *frameToSend = new IplImage;
-    frameToSend = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
+    IplImage *frameToSend = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
     cvCopy(frame, frameToSend);
     emit imageCaptured(frameToSend);
 
-    IplImage *frameToSend2 = new IplImage;
-    frameToSend2 = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
+    IplImage *frameToSend2 = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
     cvCopy(frame, frameToSend2);
     emit imageCaptured2(frameToSend2);
+
 }
 
 

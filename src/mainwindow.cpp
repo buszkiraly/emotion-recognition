@@ -156,7 +156,6 @@ void MainWindow::setProgressBar(int value){
 
 
 void MainWindow::setDetectedImage(IplImage *img){
-
     if (!img) return;
 
     int width = ui->labelDet->geometry().width();
@@ -168,8 +167,7 @@ void MainWindow::setDetectedImage(IplImage *img){
 
     int h = frame->height;
     int w = frame->width;
-    QImage* image = new QImage(w, h, QImage::Format_ARGB32);
-    *image = QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
+    QImage* image = new QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
 
     det_framenumber++;
 
@@ -186,26 +184,25 @@ void MainWindow::setDetectedImage(IplImage *img){
     ui->labelDet->setPixmap(QPixmap::fromImage(*image));
     ui->labelDet->show();
 
+    delete image;
     cvReleaseImage(&frame);
     cvReleaseImage(&img);
 }
 
 void MainWindow::setCapturedImage(IplImage*  img){
+
     if (!img) return;
 
     int width = ui->labelCap->geometry().width();
     int height = ui->labelCap->geometry().height();
-    IplImage *frame;
-
-    frame = cvCreateImage( cvSize(width,height ), img->depth, img->nChannels );
+    IplImage *frame = cvCreateImage( cvSize(width,height ), img->depth, img->nChannels );
 
     cvResize(img, frame);
     cvCvtColor(frame,frame,CV_BGR2RGB);
 
     int h = frame->height;
     int w = frame->width;
-    QImage* image = new QImage(w, h, QImage::Format_ARGB32);
-    *image = QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
+    QImage* image = new QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
 
     cap_framenumber++;
 
@@ -222,6 +219,7 @@ void MainWindow::setCapturedImage(IplImage*  img){
     ui->labelCap->setPixmap(QPixmap::fromImage(*image));
     ui->labelCap->show();
 
+    delete image;
     cvReleaseImage(&frame);
     cvReleaseImage(&img);
 }
