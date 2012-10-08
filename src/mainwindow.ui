@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1246</width>
-    <height>570</height>
+    <width>1163</width>
+    <height>629</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,10 +20,10 @@
    <widget class="QLabel" name="labelDet">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>20</y>
-      <width>320</width>
-      <height>240</height>
+      <x>10</x>
+      <y>30</y>
+      <width>561</width>
+      <height>451</height>
      </rect>
     </property>
     <property name="text">
@@ -33,7 +33,7 @@
    <widget class="QLabel" name="label_det_fps">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>190</x>
       <y>0</y>
       <width>71</width>
       <height>16</height>
@@ -52,7 +52,7 @@
    <widget class="QLabel" name="labelDet_Text">
     <property name="geometry">
      <rect>
-      <x>340</x>
+      <x>150</x>
       <y>0</y>
       <width>91</width>
       <height>16</height>
@@ -66,9 +66,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>20</y>
-      <width>320</width>
-      <height>240</height>
+      <y>30</y>
+      <width>161</width>
+      <height>131</height>
      </rect>
     </property>
     <property name="text">
@@ -78,7 +78,7 @@
    <widget class="QLabel" name="label_cap_fps">
     <property name="geometry">
      <rect>
-      <x>231</x>
+      <x>70</x>
       <y>0</y>
       <width>60</width>
       <height>16</height>
@@ -110,8 +110,8 @@
    <widget class="QPushButton" name="pushButton_11">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>320</y>
+      <x>990</x>
+      <y>500</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -124,7 +124,7 @@
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>280</y>
+      <y>500</y>
       <width>83</width>
       <height>31</height>
      </rect>
@@ -137,7 +137,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>280</y>
+      <y>500</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -149,8 +149,8 @@
    <widget class="QProgressBar" name="smileProgress">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>280</y>
+      <x>870</x>
+      <y>340</y>
       <width>171</width>
       <height>31</height>
      </rect>
@@ -163,7 +163,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>280</y>
+      <y>500</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -176,7 +176,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>360</y>
+      <y>560</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -188,14 +188,14 @@
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>700</x>
-      <y>10</y>
+      <x>600</x>
+      <y>20</y>
       <width>531</width>
       <height>311</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -762,12 +762,66 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_4">
+     <attribute name="title">
+      <string>SVM regresszió</string>
+     </attribute>
+     <widget class="Plot" name="plotLabel">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>10</y>
+        <width>450</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_5">
+     <attribute name="title">
+      <string>Érzelmek</string>
+     </attribute>
+     <widget class="EmoSpectrum" name="spectrumLabel">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>10</y>
+        <width>450</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_6">
+     <attribute name="title">
+      <string>Fej iránya</string>
+     </attribute>
+     <widget class="HeadPoseIndicator" name="headPoseLabel">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>200</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>520</x>
-      <y>290</y>
+      <x>1050</x>
+      <y>350</y>
       <width>67</width>
       <height>17</height>
      </rect>
@@ -780,7 +834,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>320</y>
+      <y>530</y>
       <width>261</width>
       <height>29</height>
      </rect>
@@ -792,8 +846,8 @@
    <widget class="QLabel" name="videoProgress">
     <property name="geometry">
      <rect>
-      <x>106</x>
-      <y>360</y>
+      <x>280</x>
+      <y>530</y>
       <width>161</width>
       <height>20</height>
      </rect>
@@ -805,8 +859,8 @@
    <widget class="QCheckBox" name="blackA">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>370</y>
+      <x>870</x>
+      <y>480</y>
       <width>191</width>
       <height>22</height>
      </rect>
@@ -818,8 +872,8 @@
    <widget class="QCheckBox" name="recordA">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>400</y>
+      <x>870</x>
+      <y>510</y>
       <width>191</width>
       <height>22</height>
      </rect>
@@ -831,8 +885,8 @@
    <widget class="QSpinBox" name="contrastSizeA">
     <property name="geometry">
      <rect>
-      <x>530</x>
-      <y>430</y>
+      <x>1060</x>
+      <y>540</y>
       <width>71</width>
       <height>27</height>
      </rect>
@@ -847,8 +901,8 @@
    <widget class="QLabel" name="contrastLabel">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>440</y>
+      <x>870</x>
+      <y>550</y>
       <width>181</width>
       <height>17</height>
      </rect>
@@ -861,9 +915,9 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>400</y>
+      <y>560</y>
       <width>81</width>
-      <height>27</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -874,13 +928,195 @@
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>400</y>
+      <y>560</y>
       <width>81</width>
-      <height>27</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
      <string>+1</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="horizontalSlider">
+    <property name="geometry">
+     <rect>
+      <x>870</x>
+      <y>400</y>
+      <width>171</width>
+      <height>29</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>50</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>870</x>
+      <y>380</y>
+      <width>111</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Mosolyküszöb:</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_15">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>530</y>
+      <width>111</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Reset</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="comboBox">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>360</y>
+      <width>171</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Kikapcsolva</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Gombok</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Fej állás + meglepetés</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Fej állás + kéz felemelés</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>340</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>CsoKiválasztó algoritmus:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>400</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Kiválasztott csoki:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="selectedChocolateLabel">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>400</y>
+      <width>61</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>430</y>
+      <width>101</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Nézett csoki:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lookedChocolateLabel">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>430</y>
+      <width>58</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>460</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Mosolyra várunk:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>460</y>
+      <width>58</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Nem</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>490</y>
+      <width>141</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Pontok számozása</string>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
     </property>
    </widget>
    <zorder>labelDet</zorder>
@@ -905,38 +1141,48 @@
    <zorder>contrastLabel</zorder>
    <zorder>rewindButton</zorder>
    <zorder>forwardButton</zorder>
+   <zorder>horizontalSlider</zorder>
+   <zorder>label_3</zorder>
+   <zorder>pushButton_15</zorder>
+   <zorder>comboBox</zorder>
+   <zorder>label_4</zorder>
+   <zorder>label_5</zorder>
+   <zorder>selectedChocolateLabel</zorder>
+   <zorder>label_6</zorder>
+   <zorder>lookedChocolateLabel</zorder>
+   <zorder>label_7</zorder>
+   <zorder>label_8</zorder>
+   <zorder>checkBox</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1246</width>
-     <height>25</height>
+     <width>1163</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
-  <widget class="QToolBar" name="toolBar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>Plot</class>
+   <extends>QLabel</extends>
+   <header>plot.h</header>
+  </customwidget>
+  <customwidget>
+   <class>EmoSpectrum</class>
+   <extends>QLabel</extends>
+   <header>emospectrum.h</header>
+  </customwidget>
+  <customwidget>
+   <class>HeadPoseIndicator</class>
+   <extends>QLabel</extends>
+   <header>headposeindicator.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

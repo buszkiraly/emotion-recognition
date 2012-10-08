@@ -5,10 +5,18 @@
 #include <mainwindow.h>
 #include <QtGui/QApplication>
 #include "QMutex"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
-extern "C"{
-#include <hid.h>
-}
+#include <sys/ioctl.h>
+#include <termios.h>
+
+#include "automata.h"
+
+#define BUTTONS     1
+#define SURPRISE    2
+#define HAND        3
 
 
 using namespace std;
@@ -21,17 +29,15 @@ ControlThread::ControlThread(){
     cout<<"Hello from ControlThread"<<endl;
 
     value = 0;
+    algorithm = 0;
     smile = false;
     ready = false;
     face  = false;
 
-    machineConnected = false;
-    machineNeeded = false;
-
     timer = new QTime();
     timer->start();
 
-    initMachine();
+    Automata::Init();
 }
 
 void ControlThread::run(){
@@ -47,7 +53,8 @@ void ControlThread::run(){
 
             if (ready){
                 if (smile){
-                    value++;
+                    value+=5;
+                    emit smileValue(value);
                 }else{
                     nosmile++;
                     if (nosmile == 100){
@@ -57,10 +64,11 @@ void ControlThread::run(){
                 }
             }
 
-            if (value == 10){
-                toMachine(toSend);
+            if (value == 100){
+                Automata::getChocolate();
                 cout<<"csokit kapsz"<<endl;
                 ready = false;
+                emit waitingForSmile(ready);
                 value = 0;
             }
 
@@ -74,31 +82,43 @@ void ControlThread::run(){
 }
 
 void ControlThread::readyToSmile(QString qstring){
+    if (algorithm != BUTTONS) return;
+
     ready = true;
-    toSend = qstring;
+    emit waitingForSmile(ready);
+
+    Automata::setSelected(qstring);
+    emit selected(qstring);
 }
 
-void ControlThread::toMachine(QString toSend){
+void ControlThread::lookedSlot(double linex, double liney){
+    emit lookedAt(Automata::translateCoord(linex,liney));
+}
 
-    if (connected){
-        char buf[64];
+void ControlThread::readyToSmileFromSurprise(double linex, double liney){
+    if (algorithm != SURPRISE) return;
 
-        buf[0] = '9';
-        buf[1] = '4';
-        buf[2] = toSend.toStdString()[0];
-        cout<<buf[2]<<endl;
-        buf[3] = toSend.toStdString()[1];
-        cout<<buf[3]<<endl;
-        buf[4] = '9';
-        for (int i=5; i<64; i++) {
-            buf[i] = 0;
-        }
-        //rawhid_send(0, buf, 64, 100);
-    }else{
-        cout<<toSend.toStdString()[0]<<endl;
-    }
+    ready = true;
+    emit waitingForSmile(ready);
+
+    Automata::setSelected(linex, liney);
+
+    emit selected(Automata::translateCoord(linex,liney));
 
 }
+
+void ControlThread::readyToSmileFromHand(double linex, double liney){
+    if (algorithm != HAND) return;
+
+    ready = true;
+    emit waitingForSmile(ready);
+
+    Automata::setSelected(linex, liney);
+
+    emit selected(Automata::translateCoord(linex,liney));
+
+}
+
 
 void ControlThread::smileDetected(){
     smile = true;
@@ -109,21 +129,22 @@ void ControlThread::faceDetected(bool face){
     emit recordVideo(face);
 }
 
-void ControlThread::initMachine(){
 
-    // TODO
-    // megoldani az automatavezérlést
-
-    /*
-    int rawhid;
-    rawhid = rawhid_open(1, 0x16C0, 0x0480, 0xFFAB, 0x0200);
-    if (rawhid <= 0) {
-        cout<<"machine not connected"<<endl;
-        machineConnected = false;
-    }else{
-        cout<<"machine connected"<<endl;
-        machineConnected = true;
-    }
-    */
+void ControlThread::reset(){
+    value = 0;
+    ready = false;
+    emit waitingForSmile(ready);
 }
+
+void ControlThread::selectionAlgorithm(int index){
+    if (algorithm == index) return;
+
+    ready = false;
+    emit waitingForSmile(ready);
+
+    algorithm = index;
+    value = 0;
+}
+
+
 

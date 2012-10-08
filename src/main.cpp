@@ -23,24 +23,35 @@
 #include "cv.h"
 #include "highgui.h"
 #include "structures.h"
+#include "QTime"
 
 
 using namespace std;
 
 char                    *filename_face = "/home/zoltan/haarcascades/haarcascade_frontalface_alt.xml";
 char                    *filename_eye = "/home/zoltan/haarcascades/haarcascade_eye.xml";
+char                    *filename_hand = "/home/zoltan/Dropbox/EmotionRecognition/hand_vu_classifier/config/Lback.9.xml";
 
-CvHaarClassifierCascade *cascade_face, *cascade_eye;
+CvHaarClassifierCascade *cascade_face, *cascade_eye, *cascade_hand;
 
 MainWindow              *w;
 CaptureThread           *cap;
 DetectorThread          *det;
 ControlThread           *con;
 
+// Time measurement
+QTime *signalTime;
+QTime *captureSignalTime;
+QTime *toDetectorSignalTime;
 
 
 int main(int argc, char *argv[])
 {
+
+    // Time measurement
+    signalTime = new QTime();
+    captureSignalTime = new QTime();
+    toDetectorSignalTime = new QTime();
 
     qRegisterMetaType<params>("params");
 
@@ -73,7 +84,7 @@ int main(int argc, char *argv[])
     QObject::connect( det, SIGNAL( imageProcessed(IplImage*) ),
         w, SLOT( setDetectedImage(IplImage*) ), Qt::BlockingQueuedConnection);
     QObject::connect( det, SIGNAL( imageProcessed(IplImage*) ),
-        cap, SLOT( imageProcessed()), Qt::BlockingQueuedConnection);
+        cap, SLOT( imageProcessed())/*, Qt::BlockingQueuedConnection*/);
     QObject::connect( det, SIGNAL( smileDetected() ),
         con, SLOT( smileDetected() ), Qt::QueuedConnection);
     QObject::connect( det, SIGNAL( faceDetected(bool) ),
@@ -82,16 +93,41 @@ int main(int argc, char *argv[])
         w, SLOT( smilePercentage(int)));
     QObject::connect( det, SIGNAL( initParams(params,params) ) ,
         w, SLOT( initParams(params,params)));
+    QObject::connect( det, SIGNAL( plotPointsSignal(std::vector<int>,std::vector<int>)) ,
+        w, SLOT( incomingPoints(std::vector<int>,std::vector<int>)), Qt::BlockingQueuedConnection);
+    QObject::connect( det, SIGNAL( volumes(std::vector<int>)) ,
+        w, SLOT( incomingVolumes(std::vector<int>)), Qt::BlockingQueuedConnection);
+    QObject::connect( det, SIGNAL( coord(double,double)) ,
+        w, SLOT( incomingHeadPoseCoords(double,double)), Qt::BlockingQueuedConnection);
+    QObject::connect( det, SIGNAL( coord(double,double)),
+        con, SLOT( lookedSlot(double, double) ), Qt::QueuedConnection);
+    QObject::connect( det, SIGNAL( surpriseSelected(double,double)) ,
+        con, SLOT( readyToSmileFromSurprise(double,double) ));
+    QObject::connect( det, SIGNAL( handSelected(double,double)) ,
+        con, SLOT( readyToSmileFromHand(double,double) ));
 
 
     QObject::connect( con, SIGNAL( progressBarValue(int ) ),
         w, SLOT( setProgressBar(int ) ));
+    QObject::connect( con, SIGNAL( selected(QString)) ,
+            w, SLOT( selectedSlot(QString)) );
+    QObject::connect( con, SIGNAL( lookedAt(QString)) ,
+            w, SLOT( lookedAtSlot(QString)) );
+    QObject::connect( con, SIGNAL( smileValue(int ) ),
+        w, SLOT( smileValue(int ) ));
     QObject::connect( con, SIGNAL( recordVideo(bool) ),
         cap, SLOT( setState(bool) ));
+    QObject::connect( con, SIGNAL( waitingForSmile(bool) ),
+        w, SLOT( waitingForSmile(bool) ));
 
-
+    QObject::connect( w, SIGNAL( pointsAnnotations(bool)) ,
+        det, SLOT( pointsAnnotations(bool) ));
     QObject::connect( w, SIGNAL( paramsChanged(params)) ,
         det, SLOT( paramsChanged(params) ));
+    QObject::connect( w, SIGNAL( smileCutOff(int)) ,
+        det, SLOT( smileCutOff(int) ));
+    QObject::connect( w, SIGNAL( resetModel()) ,
+                      det, SLOT( resetModel() ));
     QObject::connect( w, SIGNAL( contrastSizeChanged(int)) ,
         det, SLOT( contrastSizeChanged(int) ));
     QObject::connect( w, SIGNAL( loadModelA(QString)) ,
@@ -100,6 +136,10 @@ int main(int argc, char *argv[])
         det, SLOT( loadModelB(QString)));
     QObject::connect( w, SIGNAL( readyToSmile(QString)) ,
         con, SLOT( readyToSmile(QString) ));
+    QObject::connect( w, SIGNAL( resetModel()) ,
+        con, SLOT( reset() ));
+    QObject::connect( w, SIGNAL( selectionAlgorithm(int)) ,
+        con, SLOT( selectionAlgorithm(int)));
     QObject::connect( w, SIGNAL( blackToggled(bool)) ,
         det, SLOT( setBlack(bool) ));
     QObject::connect( w, SIGNAL( writeShape()) ,
@@ -122,6 +162,7 @@ int main(int argc, char *argv[])
 
     cascade_face = ( CvHaarClassifierCascade* )cvLoad( filename_face, 0, 0, 0 );
     cascade_eye = ( CvHaarClassifierCascade* )cvLoad( filename_eye, 0, 0, 0 );
+    cascade_hand = ( CvHaarClassifierCascade* )cvLoad( filename_hand, 0, 0, 0 );
 
     w->show();
 
@@ -131,7 +172,8 @@ int main(int argc, char *argv[])
 
     a.exec();
 
-    cap->closeVideo(); // ezt kell tüntetni és minden szálat leállíthatóvá kell tenni
+    cap->closeVideo();
+
 
     return 0;
 }

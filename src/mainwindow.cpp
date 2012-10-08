@@ -19,6 +19,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include "structures.h"
+#include "QProcess"
 
 using namespace std;
 
@@ -26,20 +27,71 @@ extern DetectorThread   *det;
 extern CaptureThread    *cap;
 extern ControlThread    *con;
 
+// Time measurement
+QTime *functionTimer;
+extern QTime *signalTime;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
+    // Time measurement
+    functionTimer = new QTime();
+
+
+    /*********************** removing unnecessary components for the demo *********************************/
+  /*
+    ui->forwardButton->setVisible(false);
+    ui->frameCounter->setVisible(false);
+    ui->pushButton_13->setVisible(false);
+    ui->pushButton_14->setVisible(false);
+    ui->rewindButton->setVisible(false);
+    ui->stopButton->setVisible(false);
+    ui->videoProgress->setVisible(false);
+*/
+    ui->pushButton_11->setVisible(false);
+    ui->blackA->setVisible(false);
+    ui->recordA->setVisible(false);
+    ui->contrastLabel->setVisible(false);
+    ui->contrastSizeA->setVisible(false);
+/*
+    ui->tabWidget->setTabEnabled(0,false);
+    ui->tabWidget->setTabEnabled(1,false);
+    */
+    /****************************************************************************************/
+
+
+
     ui->progressBar->setValue(0);
+
+    QObject::connect( this, SIGNAL( points(std::vector<int>,std::vector<int>) ) ,
+        ui->plotLabel, SLOT( points(std::vector<int>,std::vector<int>) ));
+
+    QObject::connect( this, SIGNAL( drawPlot()) ,
+        ui->plotLabel, SLOT( paintEvent(QPaintEvent*)) );
+
+    QObject::connect( this, SIGNAL( emoVolumes(std::vector<int>)) ,
+        ui->spectrumLabel, SLOT( volumes(std::vector<int>)) );
+
+    QObject::connect( this, SIGNAL( outGoingHeadPoseCoords(double,double)) ,
+        ui->headPoseLabel, SLOT( coord(double,double)) );
+
+    std::vector<int> myVolumes;
+    myVolumes.push_back(10);
+    myVolumes.push_back(20);
+    myVolumes.push_back(30);
+    myVolumes.push_back(40);
+
+    emit emoVolumes(myVolumes);
 
     det_timer = new QTime();
     cap_timer = new QTime();
 
     det_framenumber = 0;
     cap_framenumber = 0;
-
+/*
     IplImage *frame = cvLoadImage("/home/zoltan/DeMoLib_v1_1_1/Hypocrite.jpg",-1);
 
     cvCvtColor(frame,frame,CV_BGR2RGB);
@@ -56,7 +108,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->frameCounter->setVisible(false);
 
     cvReleaseImage(&frame);
-
+*/
 }
 
 MainWindow::~MainWindow()
@@ -156,7 +208,14 @@ void MainWindow::setProgressBar(int value){
 
 
 void MainWindow::setDetectedImage(IplImage *img){
+
+    // Reading signal transition time
+    cout<<"Detected image singal transition time was: "<<signalTime->elapsed()<<"ms"<<endl;
+
     if (!img) return;
+
+    // Starting time measurement
+    functionTimer->start();
 
     int width = ui->labelDet->geometry().width();
     int height = ui->labelDet->geometry().height();
@@ -187,11 +246,17 @@ void MainWindow::setDetectedImage(IplImage *img){
     delete image;
     cvReleaseImage(&frame);
     cvReleaseImage(&img);
+
+    // Reading execution time
+    cout<<"setDetectedImage execution time was: "<<functionTimer->elapsed()<<"ms"<<endl;
 }
 
 void MainWindow::setCapturedImage(IplImage*  img){
 
     if (!img) return;
+
+    // Starting time measurement
+    functionTimer->start();
 
     int width = ui->labelCap->geometry().width();
     int height = ui->labelCap->geometry().height();
@@ -222,6 +287,9 @@ void MainWindow::setCapturedImage(IplImage*  img){
     delete image;
     cvReleaseImage(&frame);
     cvReleaseImage(&img);
+
+    // Reading execution time
+    cout<<"setCapturedImage execution time was: "<<functionTimer->elapsed()<<"ms"<<endl;
 }
 
 void MainWindow::smilePercentage(int perc){
@@ -573,15 +641,74 @@ void MainWindow::on_forwardButton_clicked()
     emit forward();
 }
 
-
-
-
-
-
-
-
-
 void MainWindow::on_contrastSizeA_valueChanged(int arg1)
 {
     emit contrastSizeChanged(arg1);
+}
+
+void MainWindow::incomingPoints(vector<int> plotPoints,vector<int> plotPoints2){
+
+    emit points(plotPoints,plotPoints2);
+
+}
+
+void MainWindow::incomingVolumes(vector<int> volumes){
+    emit emoVolumes(volumes);
+}
+
+void MainWindow::incomingHeadPoseCoords(double x, double y)
+{
+    emit outGoingHeadPoseCoords(x,y);
+}
+
+void MainWindow::on_pushButton_10_clicked()
+{
+
+}
+
+void MainWindow::on_pushButton_10_clicked(bool checked)
+{
+
+}
+
+void MainWindow::on_horizontalSlider_valueChanged(int value)
+{
+    emit smileCutOff(value);
+}
+
+void MainWindow::smileValue(int value){
+   // ui->progressBar->setValue(100);
+}
+
+void MainWindow::on_pushButton_15_clicked()
+{
+    emit resetModel();
+}
+
+void MainWindow::on_checkBox_clicked()
+{
+
+}
+
+void MainWindow::on_checkBox_toggled(bool checked)
+{
+    emit pointsAnnotations(checked);
+}
+
+void MainWindow::lookedAtSlot(QString slot){
+    ui->lookedChocolateLabel->setText(slot);
+}
+
+void MainWindow::selectedSlot(QString slot){
+    ui->selectedChocolateLabel->setText(slot);
+}
+
+void MainWindow::on_comboBox_currentIndexChanged(int index)
+{
+    emit selectionAlgorithm(index);
+}
+
+void MainWindow::waitingForSmile(bool waiting){
+    if (waiting) ui->label_8->setText("Igen");
+    else ui->label_8->setText("Nem");
 }

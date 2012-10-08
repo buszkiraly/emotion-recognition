@@ -13,9 +13,11 @@ INCLUDEPATH += /home/zoltan/vxl/core/
 INCLUDEPATH += /home/zoltan/vxl/vxl-1.14.0/core
 INCLUDEPATH += /home/zoltan/DeMoLib_v1_1_1/src/libsvm/
 INCLUDEPATH += /home/zoltan/vxl/v3p/netlib/
+INCLUDEPATH += /home/zoltan/FaceTracker/src/lib
+INCLUDEPATH += /home/zoltan/libsvm-3.12
+#INCLUDEPATH += /usr/src/linux-headers-3.2.0-30/include/linux/
+#INCLUDEPATH += /usr/src/linux-headers-3.2.0-31/include/
 
-#INCLUDEPATH += /usr/src/linux-headers-3.2.0-26/include/linux
-#INCLUDEPATH += /usr/src/linux-headers-3.2.0-26/include
 
 LIBS += -L/usr/local/lib/
 LIBS += -lopencv_core
@@ -30,8 +32,8 @@ LIBS += -lopencv_video
 LIBS += -lopencv_features2d
 
 LIBS += -L/home/zoltan/DeMoLib_v1_1_1/src/lib/
-LIBS += -lDeMoLib
-LIBS += -llibsvm
+#LIBS += -lDeMoLib
+#LIBS += -llibsvm
 
 LIBS += -L/home/zoltan/vxl/lib
 LIBS += -lbcal
@@ -153,7 +155,9 @@ LIBS += -lm
 
 
 LIBS += -L/usr/lib/
-#LIBS += -lusb
+#LIBS += -L/lib/x86_64-linux-gnu/
+#LIBS += -lusb-0.1
+LIBS += -lusb
 #LIBS += -ldc1394
 
 OTHER_FILES += \
@@ -167,7 +171,20 @@ HEADERS += \
     /home/zoltan/DeMoLib_v1_1_1/src/gui/fit.h \
     /home/zoltan/DeMoLib_v1_1_1/src/lib/DeMoLib_demo.h \
     structures.h \
-    fit.h
+    ../../../FaceTracker/src/lib/Tracker.h \
+    ../../../FaceTracker/src/lib/PDM.h \
+    ../../../FaceTracker/src/lib/PAW.h \
+    ../../../FaceTracker/src/lib/Patch.h \
+    ../../../FaceTracker/src/lib/IO.h \
+    ../../../FaceTracker/src/lib/FDet.h \
+    ../../../FaceTracker/src/lib/FCheck.h \
+    ../../../FaceTracker/src/lib/CLM.h \
+    ../../../libsvm-3.12/svm.h \
+    plot.h \
+    emospectrum.h \
+    headposeindicator.h \
+    automata.h \
+    facetrackerfunctions.h
 SOURCES += \
     mainwindow.cpp \
     main.cpp \
@@ -177,7 +194,21 @@ SOURCES += \
     /home/zoltan/vxl/vxl-1.14.0/core/vnl/algo/vnl_cholesky.cxx \
     /home/zoltan/vxl/vxl-1.14.0/core/vnl/algo/Templates/vnl_svd+double-.cxx \
     /home/zoltan/vxl/vxl-1.14.0/core/vnl/algo/Templates/vnl_qr+double-.cxx \
-    /home/zoltan/vxl/vxl-1.14.0/core/vnl/Templates/vnl_vector+double-.cxx
+    /home/zoltan/vxl/vxl-1.14.0/core/vnl/Templates/vnl_vector+double-.cxx \
+    ../../../FaceTracker/src/lib/Tracker.cc \
+    ../../../FaceTracker/src/lib/PDM.cc \
+    ../../../FaceTracker/src/lib/PAW.cc \
+    ../../../FaceTracker/src/lib/Patch.cc \
+    ../../../FaceTracker/src/lib/IO.cc \
+    ../../../FaceTracker/src/lib/FDet.cc \
+    ../../../FaceTracker/src/lib/FCheck.cc \
+    ../../../FaceTracker/src/lib/CLM.cc \
+    ../../../libsvm-3.12/svm.cpp \
+    plot.cpp \
+    emospectrum.cpp \
+    headposeindicator.cpp \
+    hid_LINUX.c \
+    automata.cpp
 
 FORMS += \
     mainwindow.ui

@@ -11,6 +11,7 @@
 #include <QTime>
 #include <phonon/Phonon>
 #include "structures.h"
+#include "plot.h"
 
 namespace Ui {
 class MainWindow;
@@ -72,6 +73,13 @@ public slots:
     void error(char*);
     void disableFrameCounter();
     void enableFrameCounter();
+    void incomingPoints(std::vector<int> plotPoints,std::vector<int> plotPoints2);
+    void incomingVolumes(std::vector<int>);
+    void incomingHeadPoseCoords(double,double);
+    void smileValue(int);
+    void lookedAtSlot(QString);
+    void selectedSlot(QString);
+    void waitingForSmile(bool);
 
 signals:
     void readyToSmile(QString);
@@ -89,6 +97,14 @@ signals:
     void rewind();
     void forward();
     void contrastSizeChanged(int);
+    void points(std::vector<int> points,std::vector<int> points2);
+    void drawPlot();
+    void emoVolumes(std::vector<int>);
+    void outGoingHeadPoseCoords(double, double);
+    void smileCutOff(int);
+    void resetModel();
+    void selectionAlgorithm(int);
+    void pointsAnnotations(bool);
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -100,6 +116,20 @@ private slots:
     void on_forwardButton_clicked();
 
     void on_contrastSizeA_valueChanged(int arg1);
+
+    void on_pushButton_10_clicked();
+
+    void on_pushButton_10_clicked(bool checked);
+
+    void on_horizontalSlider_valueChanged(int value);
+
+    void on_pushButton_15_clicked();
+
+    void on_checkBox_clicked();
+
+    void on_checkBox_toggled(bool checked);
+
+    void on_comboBox_currentIndexChanged(int index);
 
 private:
     Ui::MainWindow *ui;

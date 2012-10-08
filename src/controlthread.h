@@ -22,6 +22,7 @@ class ControlThread : public QThread
     QString     toSend;
     bool        machineConnected, machineNeeded;
     QMutex      myMutex;
+    int         algorithm;
 
 
 public:
@@ -35,11 +36,20 @@ signals:
     void recordVideo(bool);
     void waitForProcessing(bool);
     void loadPicture(QString);
+    void smileValue(int);
+    void lookedAt(QString);
+    void selected(QString);
+    void waitingForSmile(bool);
 
 public slots:
     void smileDetected();
     void faceDetected(bool face);
     void readyToSmile(QString qstring);
+    void readyToSmileFromSurprise(double, double);
+    void readyToSmileFromHand(double, double);
+    void reset();
+    void lookedSlot(double, double);
+    void selectionAlgorithm(int);
 };
 
 #endif // CONTROLTHREAD_H

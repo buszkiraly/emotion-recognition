@@ -10,6 +10,10 @@ using namespace std;
 
 extern CvHaarClassifierCascade  *cascade_face;
 
+// Time measurement
+extern QTime *captureSignalTime;
+extern QTime *toDetectorSignalTime;
+
 CaptureThread::CaptureThread(){
     frame = NULL;
     stream = NULL;
@@ -148,8 +152,6 @@ void CaptureThread::changingToVideo(){
 
     emit grabbingFromVideo();
 
-     // várjon a feldolgozásra !!!
-
 }
 
 void CaptureThread::changingToCamera(){
@@ -163,7 +165,13 @@ void CaptureThread::changingToCamera(){
     }
 
     captureCam = NULL;
+
+#define SAJAT
+#ifdef SAJAT
     captureCam = cvCaptureFromCAM( CV_CAP_ANY );
+#else
+    captureCam = cvCaptureFromCAM( 1 );
+#endif
     cvReleaseCapture(&captureVid);
     if (!captureCam){
         cout<<"Coudn't grab camera"<<endl;
@@ -176,7 +184,6 @@ void CaptureThread::changingToCamera(){
     emit frameCount(0,0);
     emit grabbingFromCamera();
 
-    // ne várjon a feldolgozásra
 }
 
 void CaptureThread::changingToPicture(){
@@ -190,7 +197,7 @@ void CaptureThread::changingToPicture(){
     video = false;
     picture = false;
 
-    frame = NULL; //hogy lássam, hogy, ha nem sikerült a grab
+    frame = NULL;
     frame = cvLoadImage(pictureSourceAddress.toStdString().c_str(),-1);
 
     waitForProcessing = false;
@@ -202,7 +209,7 @@ void CaptureThread::changingToPicture(){
 
 void CaptureThread::grabFrame(){
     if (camera){
-        frame = NULL; //hogy lássam, hogy, ha nem sikerült a grab
+        frame = NULL;
 
         seekMutex.lock();
         frame = cvQueryFrame( captureCam );
@@ -216,10 +223,10 @@ void CaptureThread::grabFrame(){
 
 
     }else if (video){
-        frame = NULL; //hogy lássam, hogy, ha nem sikerült a grab
+        frame = NULL;
         frame = cvQueryFrame( captureVid );
         if (!frame) {
-            changingToVideo(); // újrakezdi a videót, de még kezelni kell, ha tényleg nem tud olvasni egy fájlból
+            changingToVideo();
             return;
         }
         emit frameCount(cvGetCaptureProperty(captureVid,CV_CAP_PROP_POS_FRAMES),cvGetCaptureProperty(captureVid,CV_CAP_PROP_FRAME_COUNT));
@@ -283,6 +290,10 @@ void CaptureThread::closeVideo(){
 }
 
 void CaptureThread::imageProcessed(){
+    // Reading captureSignalTime
+    cout<<"captureThread signal transition time was: "<<captureSignalTime->elapsed()<<"ms"<<endl;
+
+
     stopped = false;
 }
 
@@ -335,6 +346,11 @@ void CaptureThread::sendImage(){
 
     IplImage *frameToSend2 = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
     cvCopy(frame, frameToSend2);
+
+    // Measuring signl transition time
+    toDetectorSignalTime->start();
+
+
     emit imageCaptured2(frameToSend2);
 
 }
