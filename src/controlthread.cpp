@@ -92,7 +92,8 @@ void ControlThread::readyToSmile(QString qstring){
 }
 
 void ControlThread::lookedSlot(double linex, double liney){
-    emit lookedAt(Automata::translateCoord(linex,liney));
+    Automata::setLookedAt(linex,liney);
+    emit lookedAt(Automata::getLookedAt());
 }
 
 void ControlThread::readyToSmileFromSurprise(double linex, double liney){
@@ -103,7 +104,7 @@ void ControlThread::readyToSmileFromSurprise(double linex, double liney){
 
     Automata::setSelected(linex, liney);
 
-    emit selected(Automata::translateCoord(linex,liney));
+    emit selected(Automata::getSelected());
 
 }
 

@@ -46,10 +46,7 @@ void Automata::close(){
 
 bool Automata::setLookedAt(double linex, double liney){
 
-    QString lookedAt = translateCoord(linex,liney);
-
-    if (lookedAt != NULL ) return false;
-    else Automata::lookedAt = lookedAt;
+    Automata::lookedAt = translateCoord(linex,liney);
 
     sendLookedAt();
 
@@ -62,10 +59,7 @@ QString Automata::getLookedAt(){
 
 bool Automata::setSelected(double linex, double liney){
 
-    QString selected = translateCoord(linex,liney);
-
-    if (selected != NULL ) return false;
-    else Automata::selected = selected;
+    Automata::selected = translateCoord(linex,liney);
 
     sendSelected();
 
@@ -74,6 +68,7 @@ bool Automata::setSelected(double linex, double liney){
 
 bool Automata::setSelected(QString selected){
 
+    if (selected == NULL) return false;
     if (selected.length() != 2) return false;
 
     if ( (selected.toStdString()[0] != 'a') && (selected.toStdString()[0] != 'b') && (selected.toStdString()[0] != 'c') ){
@@ -95,6 +90,8 @@ QString Automata::getSelected(){
 
 bool Automata::sendLookedAt(){
 
+    if (lookedAt == NULL) return false;
+
     return send(QString(LOOKEDAT).append(lookedAt));
 }
 
@@ -115,11 +112,12 @@ bool Automata::send(QString toSend){
             buf[i] = 0;
         }
 
-        buf[0] = toSend.toStdString()[0];
-        buf[1] = toSend.toStdString()[1];
-        buf[2] = toSend.toStdString()[2];
+        buf[0] = toSend.toStdString().c_str()[0];
+        buf[1] = toSend.toStdString().c_str()[1];
+        buf[2] = toSend.toStdString().c_str()[2];
 
-        rawhid_send(0, buf, 64, 100);
+        std::cout<<"Kikuldott byteok szama: "<<rawhid_send(0, buf, 64, 100)<<endl;
+
     }else{
         return false;
     }
@@ -133,23 +131,27 @@ QString Automata::translateCoord(double linex, double liney){
     // if any of the arguments is outside of [0,1] then return
     if ( (linex<-1) || (linex>1) || (-liney<-1) || (-liney>1) ) return NULL;
 
+
+
     int ix = 50-linex*100;
     int iy = -liney*100;
 
         ix = ix*6 /100 + 1 ;
         iy = iy*3 /100 ;
 
-        QString toSend;
+        QString translated;
 
         switch (iy){
-            case 0: toSend.append("a"); break;
-            case 1: toSend.append("b"); break;
-            case 2: toSend.append("c"); break;
+            case 0: translated.append("a"); break;
+            case 1: translated.append("b"); break;
+            case 2: translated.append("c"); break;
+        default: return NULL;
         }
 
-        toSend.append(QString::number(ix));
+        if ( (ix < 1) || (ix > 6) ) return NULL;
+        translated.append(QString::number(ix));
 
-        return toSend;
+        return translated;
 
 }
 

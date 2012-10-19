@@ -6,6 +6,12 @@
 #include <QDateTime>
 #include <QTime>
 
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/videodev.h>
+
 using namespace std;
 
 extern CvHaarClassifierCascade  *cascade_face;
@@ -15,6 +21,48 @@ extern QTime *captureSignalTime;
 extern QTime *toDetectorSignalTime;
 
 CaptureThread::CaptureThread(){
+
+
+
+
+    int fd;
+    char name[100];
+
+    string toOpen1 = "/sys/class/video4linux/video";
+    int devNumber = 0;
+    string toOpen2 = "/name";
+
+    std::stringstream oss;
+
+    oss<<toOpen1<<devNumber<<toOpen2;
+
+    while((fd = open(oss.str().c_str(), O_RDONLY)) != -1){
+        cout<<oss.str()<<" device opened"<<endl;
+
+
+        memset(name,'\0',sizeof(name));
+        read(fd,name,sizeof(name));
+
+        cout<<name<<endl;
+
+        close(fd);
+
+        stringstream dev;
+        std::string strName = name;
+        strName.erase(strName.length()-1,strName.length());
+        dev<<"video"<<devNumber<<" "<<strName;
+
+        captureDevices.push_back(dev.str());
+
+
+        devNumber++;
+        oss.str("");
+        oss<<toOpen1<<devNumber<<toOpen2;
+    }
+
+    cout<<oss.str()<<" device not opened"<<endl;
+
+
     frame = NULL;
     stream = NULL;
     saveStream = NULL;
@@ -44,6 +92,8 @@ CaptureThread::CaptureThread(){
 
 void CaptureThread::run(){
     cout<<"Hello from CaptureThread!"<<endl;
+
+    emit capDevs(captureDevices);
 
     while(true) {
 
@@ -166,12 +216,9 @@ void CaptureThread::changingToCamera(){
 
     captureCam = NULL;
 
-#define SAJAT
-#ifdef SAJAT
-    captureCam = cvCaptureFromCAM( CV_CAP_ANY );
-#else
-    captureCam = cvCaptureFromCAM( 1 );
-#endif
+
+    captureCam = cvCaptureFromCAM( dev );
+
     cvReleaseCapture(&captureVid);
     if (!captureCam){
         cout<<"Coudn't grab camera"<<endl;
@@ -347,12 +394,22 @@ void CaptureThread::sendImage(){
     IplImage *frameToSend2 = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
     cvCopy(frame, frameToSend2);
 
-    // Measuring signl transition time
+    // Measuring signal transition time
     toDetectorSignalTime->start();
 
 
     emit imageCaptured2(frameToSend2);
 
+}
+
+void CaptureThread::selectedDevice(int dev){
+    if (-1 == dev) camera = false;
+    else {
+        this->dev = dev;
+        changeToCamera = true;
+        stopped = false;
+        manuallyStopped = false;
+    }
 }
 
 

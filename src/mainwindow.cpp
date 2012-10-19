@@ -696,10 +696,18 @@ void MainWindow::on_checkBox_toggled(bool checked)
 }
 
 void MainWindow::lookedAtSlot(QString slot){
+    if (slot == NULL) {
+        ui->lookedChocolateLabel->setText("Out of range");
+        return;
+    }
     ui->lookedChocolateLabel->setText(slot);
 }
 
 void MainWindow::selectedSlot(QString slot){
+    if (slot == NULL) {
+        ui->lookedChocolateLabel->setText("Out of range");
+        return;
+    }
     ui->selectedChocolateLabel->setText(slot);
 }
 
@@ -711,4 +719,27 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
 void MainWindow::waitingForSmile(bool waiting){
     if (waiting) ui->label_8->setText("Igen");
     else ui->label_8->setText("Nem");
+}
+
+void MainWindow::capDevs(std::vector<std::string> devices){
+    for (std::vector<std::string>::iterator it = devices.begin(); it<devices.end(); ++it){
+        std::string str = *it;
+        ui->comboBox_2->addItem(str.c_str());
+        cout<<str<<endl;
+    }
+}
+
+void MainWindow::on_comboBox_2_currentIndexChanged(int index)
+{
+    emit selectedDevice(index-1);
+}
+
+void MainWindow::on_pushButton_12_clicked()
+{
+
+}
+
+void MainWindow::on_pushButton_12_clicked(bool checked)
+{
+
 }

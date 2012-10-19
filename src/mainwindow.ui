@@ -120,19 +120,6 @@
      <string>Mentés</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_12">
-    <property name="geometry">
-     <rect>
-      <x>190</x>
-      <y>500</y>
-      <width>83</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Kamera</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pushButton_14">
     <property name="geometry">
      <rect>
@@ -1066,7 +1053,7 @@
      <rect>
       <x>720</x>
       <y>430</y>
-      <width>58</width>
+      <width>91</width>
       <height>16</height>
      </rect>
     </property>
@@ -1119,6 +1106,34 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QComboBox" name="comboBox_2">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>500</y>
+      <width>141</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Nincs kiválasztva</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="label_9">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>500</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Kamera:</string>
+    </property>
+   </widget>
    <zorder>labelDet</zorder>
    <zorder>label_det_fps</zorder>
    <zorder>labelDet_Text</zorder>
@@ -1127,7 +1142,6 @@
    <zorder>label</zorder>
    <zorder>pushButton_11</zorder>
    <zorder>smileProgress</zorder>
-   <zorder>pushButton_12</zorder>
    <zorder>pushButton_14</zorder>
    <zorder>pushButton_13</zorder>
    <zorder>stopButton</zorder>
@@ -1153,6 +1167,8 @@
    <zorder>label_7</zorder>
    <zorder>label_8</zorder>
    <zorder>checkBox</zorder>
+   <zorder>comboBox_2</zorder>
+   <zorder>label_9</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -1198,22 +1214,6 @@
     <hint type="destinationlabel">
      <x>197</x>
      <y>312</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButton_12</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>clickedCamera()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>200</x>
-     <y>348</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>320</x>
-     <y>334</y>
     </hint>
    </hints>
   </connection>

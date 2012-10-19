@@ -80,6 +80,7 @@ public slots:
     void lookedAtSlot(QString);
     void selectedSlot(QString);
     void waitingForSmile(bool);
+    void capDevs(std::vector<std::string>);
 
 signals:
     void readyToSmile(QString);
@@ -105,6 +106,7 @@ signals:
     void resetModel();
     void selectionAlgorithm(int);
     void pointsAnnotations(bool);
+    void selectedDevice(int);
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -130,6 +132,12 @@ private slots:
     void on_checkBox_toggled(bool checked);
 
     void on_comboBox_currentIndexChanged(int index);
+
+    void on_comboBox_2_currentIndexChanged(int index);
+
+    void on_pushButton_12_clicked();
+
+    void on_pushButton_12_clicked(bool checked);
 
 private:
     Ui::MainWindow *ui;

@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <QDateTime>
 #include <QTime>
+#include <vector>
 
 class CaptureThread : public QThread
 {
@@ -32,6 +33,8 @@ class CaptureThread : public QThread
     QString                 videoSourceAddress, pictureSourceAddress;
     bool                    camera, video, picture;
     CvCapture               *captureCam, *captureVid;
+    std::vector<std::string> captureDevices;
+    int                     dev;
 
 public:
 
@@ -57,6 +60,7 @@ signals:
     void grabbingFromCamera();
     void grabbingFromVideo();
     void grabbingPicture();
+    void capDevs(std::vector<std::string>);
 
 public slots:
     void setState(bool faceDetected);
@@ -68,6 +72,7 @@ public slots:
     void pictureSource(QString address);
     void rewind();
     void forward();
+    void selectedDevice(int);
 
 };
 

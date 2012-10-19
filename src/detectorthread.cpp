@@ -43,7 +43,6 @@
 #include <vcl_vector.h>    // vector
 #include <vcl_algorithm.h> // copy
 #include <vcl_iterator.h>  // ostream_iterator
-
 */
 #include <Tracker.h>
 #include "svm.h"
@@ -182,6 +181,8 @@ DetectorThread::DetectorThread()
           plotPoints2.push_back(0);
       }
 
+      storage_hand = NULL;
+      storage_face = NULL;
 /*
     vul_arg<const char*> dmFile(0,"Deformable model sequence fname","/home/zoltan/DeMoLib_v1_1_1/model/ckcolor/test-level_#.aam_di_linear");
     vul_arg<const char*> imFile(0,"Image file to fit in","/home/zoltan/Asztal/151");
@@ -354,7 +355,7 @@ CvRect DetectorThread::detectFaces(IplImage *img){
 
 CvRect DetectorThread::detectHands(IplImage *img){
 
-    if (storage_hand){
+    if (storage_hand != NULL){
         cvReleaseMemStorage(&storage_hand);
     }
     storage_hand = cvCreateMemStorage( 0 );
@@ -450,7 +451,7 @@ void DetectorThread::newCapturedImage(IplImage* img){
     // Reading function execution time
     cout<<"Incoming frame preprocessing time was: "<<incomingTimer->elapsed()<<"ms"<<endl;
 }
-
+/*
 void DetectorThread::enhanceContrast(IplImage* img, int x, int y, int width, int height){
 
     IplImage *red, *green, *blue;
@@ -509,6 +510,7 @@ void DetectorThread::drawAnnotationLines(IplImage* img, vnl_vector<double> s){
 }
 
 
+/*
 
 double DetectorThread::calculateSmile(vnl_vector<double> s){
     double smile = 0;
@@ -555,8 +557,7 @@ bool DetectorThread::processFrame(){
     QFuture<CvRect> future = QtConcurrent::run(this,&DetectorThread::detectFaces,frame);
     //CvRect r = detectFaces(frame);
 
-    // Reading elapsed time for face detection
-    cout<<"Face detection time was: "<<HaarFace->elapsed()<<"ms"<<endl;
+
 /*
     if (!r.width){
         frameToShow = *frame;
@@ -796,7 +797,7 @@ bool DetectorThread::processFrame(){
       Measurements in cm-s
 
       Equation of the plane is: z = 80
-      Equation of the line is given by P(0,0,0) with n(dzx,dzy,dzz)
+      Equation of the line is given by P(0,da,0) with n(dzx,dzy,dzz)
       The looked slot is given by the intersection of the two.
 
       */
@@ -811,17 +812,39 @@ bool DetectorThread::processFrame(){
     double beta = atan(dvc/dhc);
     // alfa
     double alfa = gamma-beta;
-    // da
-    double da = tan(alfa)*dhc;
+    // da distance from the camera on the Y axis
+    double da = tan(alfa)*dhc + dvc;
+
+    double dxc = (model._shape.at<double>(27,0)-320) * 0.1375;
+    // gamma
+    double xgamma = asin(pose.at<double>(2, 0));
+    // béta
+    double xbeta = atan(dxc/dhc);
+    // alfa
+    double xalfa = xgamma-xbeta;
+    // da distance from the camera on the Y axis
+    double xda = tan(xalfa)*dhc + dxc;
 
     // t
     double t = dhc/dzz;
+
+
     // intersection y
-    double liney = t*dzy/50; // 50 cm height
+    //double liney = t*dzy/50; // 50 cm height
+    double liney = (-dvc + t*dzy)/50; // 50 cm height
     // intersection x
-    double linex = t*dzx/40; // 40 cm width
+    //double linex = t*dzx/40; // 40 cm width
+    double linex = (dxc + t*dzx)/40; // 40 cm width
 
     emit coord(linex,liney);
+
+    CvFont font;
+    cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.4, 0.4, 0, 1, 8);
+
+    std::ostringstream osstream;
+    osstream << dvc;
+    std::string string_x = osstream.str();
+    cvPutText(&frameToShow, string_x.c_str(), cvPoint(600,400), &font, cvScalar(255, 255, 255, 0));
 
 
 #endif

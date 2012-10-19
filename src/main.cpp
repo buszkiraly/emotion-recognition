@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
 
     QObject::connect( cap, SIGNAL( imageCaptured(IplImage*) ),
         w, SLOT( setCapturedImage(IplImage*) ));
+    QObject::connect( cap, SIGNAL( capDevs(std::vector<std::string>)) ,
+        w, SLOT( capDevs(std::vector<std::string>) ), Qt::BlockingQueuedConnection);
     QObject::connect( cap, SIGNAL( frameCount(double,double)) ,
         w, SLOT( frameCount(double,double) ));
     QObject::connect( cap, SIGNAL( noFrameError(char*)),
@@ -158,6 +160,8 @@ int main(int argc, char *argv[])
         cap, SLOT( rewind()));
     QObject::connect( w, SIGNAL( forward()) ,
         cap, SLOT( forward()));
+    QObject::connect( w, SIGNAL( selectedDevice(int)) ,
+        cap, SLOT( selectedDevice(int)));
 
 
     cascade_face = ( CvHaarClassifierCascade* )cvLoad( filename_face, 0, 0, 0 );
