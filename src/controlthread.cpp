@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QThread>
 #include <mainwindow.h>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include "QMutex"
 #include <stdio.h>
 #include <stdlib.h>

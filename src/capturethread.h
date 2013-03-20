@@ -15,7 +15,7 @@ class CaptureThread : public QThread
 {
     Q_OBJECT
 
-    IplImage                *frame;
+    IplImage                *frame, *frame_right;
     QMutex					seekMutex;
     CvVideoWriter			*writer;
     QDateTime				myQDateTime;
@@ -32,7 +32,7 @@ class CaptureThread : public QThread
     bool                    changeToVideo, changeToPicture, changeToCamera;
     QString                 videoSourceAddress, pictureSourceAddress;
     bool                    camera, video, picture;
-    CvCapture               *captureCam, *captureVid;
+    CvCapture               *captureCamLeft, *captureCamRight, *captureVid;
     std::vector<std::string> captureDevices;
     int                     dev;
 
@@ -53,10 +53,10 @@ private:
 signals:
     void capturedImage(IplImage*);
     void imageCaptured(IplImage*);
-    void imageCaptured2(IplImage*);
+    void imageCaptured2(IplImage*,IplImage*);
     void sourceReady(bool);
     void frameCount(double,double);
-    void noFrameError(char*);
+    void noFrameError(const char*);
     void grabbingFromCamera();
     void grabbingFromVideo();
     void grabbingPicture();

@@ -9,7 +9,6 @@
 #include <detectorthread.h>
 #include <controlthread.h>
 #include <QTime>
-#include <phonon/Phonon>
 #include "structures.h"
 #include "plot.h"
 
@@ -23,7 +22,6 @@ class MainWindow : public QMainWindow
 
     QTime               *det_timer, *cap_timer;
     QString             det_fps_str, cap_fps_str;
-    Phonon::MediaObject *mediaObject;
     int                 det_framenumber, cap_framenumber;
     int                 det_elapsed, cap_elapsed;
     double              det_fps, cap_fps;
@@ -47,26 +45,7 @@ public slots:
     void clickedCamera();
     void clickedVideo();
     void clickedPicture();
-    void clickedLoadModelA();
-    void clickedLoadModelB();
     void smilePercentage(int);
-    void inUseChangedA(bool);
-    void xShiftChangedA(int);
-    void yShiftChangedA(int);
-    void modelScaleChangedA(double);
-    void modelRotChangedA(double);
-    void modelIterationsChangedA(int);
-    void fitChangedA(bool);
-    void memoFitChangedA(bool);
-    void inUseChangedB(bool);
-    void xShiftChangedB(int);
-    void yShiftChangedB(int);
-    void modelScaleChangedB(double);
-    void modelRotChangedB(double);
-    void modelIterationsChangedB(int);
-    void fitChangedB(bool);
-    void memoFitChangedB(bool);
-    void initParams(params,params);
     void clickedStop();
     void frameCount(double,double);
     void framePos();
@@ -76,7 +55,6 @@ public slots:
     void incomingPoints(std::vector<int> plotPoints,std::vector<int> plotPoints2);
     void incomingVolumes(std::vector<int>);
     void incomingHeadPoseCoords(double,double);
-    void smileValue(int);
     void lookedAtSlot(QString);
     void selectedSlot(QString);
     void waitingForSmile(bool);
@@ -119,10 +97,6 @@ private slots:
 
     void on_contrastSizeA_valueChanged(int arg1);
 
-    void on_pushButton_10_clicked();
-
-    void on_pushButton_10_clicked(bool checked);
-
     void on_horizontalSlider_valueChanged(int value);
 
     void on_pushButton_15_clicked();
@@ -135,14 +109,10 @@ private slots:
 
     void on_comboBox_2_currentIndexChanged(int index);
 
-    void on_pushButton_12_clicked();
-
-    void on_pushButton_12_clicked(bool checked);
-
 private:
     Ui::MainWindow *ui;
 
-    void append(char* );
+    void append(const char* );
 
 
 };

@@ -17,50 +17,24 @@
 #include <QSemaphore>
 #include <QWaitCondition>
 #include "QTime"
-#include "QtConcurrentRun"
+#include <algorithm>    // std::rotate
 
 #include <cv.h>
 #include <highgui.h>
+#include "imgproc.hpp"
 
 #include "facetrackerfunctions.h"
-/*
 
-/* demolib*/
-/*
-#include <fit.h>
-#include <DeMoLib_demo.h>
-#include <vcl_iostream.h>
-#include <vcl_cstdlib.h>
-#include <vcl_cstring.h>
-#include <vnl/vnl_math.h>
-#include <vil/vil_load.h>
-#include <vil/vil_new.h>
-#include <vul/vul_arg.h>
-#include <vul/vul_printf.h>
-#include <vul/vul_sequence_filename_map.h>
-#include <vcl_string.h>    // string
-#include <vcl_iostream.h>  // cout
-#include <vcl_vector.h>    // vector
-#include <vcl_algorithm.h> // copy
-#include <vcl_iterator.h>  // ostream_iterator
-*/
 #include <Tracker.h>
 #include "svm.h"
 #include <algorithm>
 
-#define JOBB_SZEMSZEL   13
-#define BAL_SZEMSZEL    21
-#define JOBB_SZAJSZEL   43
-#define BAL_SZAJSZEL    39
-#define ALL_KEZDET       0
-#define ALL_KOZEP        6
-#define ALL_VEG         12
-#define FELSO_AJAK      41
-#define ALSO_AJAK       45
 
-
-/*demolib end*/
-
+CvMat *Q;
+CvMat *mx1;
+CvMat *my1;
+CvMat *mx2;
+CvMat *my2;
 
 
 float DetectorThread::distance(point p1, point p2){
@@ -69,7 +43,7 @@ float DetectorThread::distance(point p1, point p2){
 
 using namespace std;
 
-extern CvHaarClassifierCascade  *cascade_face, *cascade_eye, *cascade_hand;
+extern CvHaarClassifierCascade  *cascade_face, *cascade_hand;
 extern char                     *filename_face;
 extern char                     *filename_smile;
 extern char                     *filename_hand;
@@ -77,7 +51,7 @@ extern char                     *filename_hand;
 CvRect                          *face;
 
 svm_model *smileSVM,*angrySVM, *contemptSVM, *disgustSVM, *fearSVM, *sadnessSVM, *surpriseSVM;
-svm_node nodes[67];
+svm_node nodes[133];
 
   char ftFile[256],conFile[256],triFile[256];
   bool fcheck;
@@ -91,12 +65,13 @@ svm_node nodes[67];
   int nIter;
   double clamp;
   double fTol;
-  FACETRACKER::Tracker model;
+  FACETRACKER::Tracker model,model_nomem,model_right,model_right_nomem;
   cv::Mat tri;
   cv::Mat kon;
 
   //initialize camera and display window
   cv::Mat frameMat,gray,im;
+  cv::Mat frameMat_right,gray_right,im_right;
   double fps;
   char sss[256];
   std::string text;
@@ -122,10 +97,19 @@ svm_node nodes[67];
     // variable for checking hand detection continuity
     short handCount = 0;
 
+    extern cv::Mat feature_mtx,scale_mtx,mean_mtx;
+
+    short check_ctr = 0;
 
 
 DetectorThread::DetectorThread()
 {
+
+    Q = (CvMat *)cvLoad("Q.xml",NULL,NULL,NULL);
+    mx1 = (CvMat *)cvLoad("mx1.xml",NULL,NULL,NULL);
+    my1 = (CvMat *)cvLoad("my1.xml",NULL,NULL,NULL);
+    mx2 = (CvMat *)cvLoad("mx2.xml",NULL,NULL,NULL);
+    my2 = (CvMat *)cvLoad("my2.xml",NULL,NULL,NULL);
 
     // Time measurement
     SVMTimer = new QTime();
@@ -139,13 +123,13 @@ DetectorThread::DetectorThread()
 
 
 
-      smileSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/SmileTrainingAll.model");
-      angrySVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Angry.model");
-      contemptSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Contempt.model");
-      disgustSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Disgust.model");
-      fearSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Fear.model");
-      sadnessSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Sadness.model");
-      surpriseSVM = svm_load_model("/home/zoltan/libsvm-3.12/tools/Surprise.model");
+    smileSVM = svm_load_model("/home/zoltan/emorec/models/xy_happy.model");
+    angrySVM = svm_load_model("/home/zoltan/emorec/models/xy_angry.model");
+    contemptSVM = svm_load_model("/home/zoltan/emorec/models/xy_contempt.model");
+    disgustSVM = svm_load_model("/home/zoltan/emorec/models/xy_disgusted.model");
+    fearSVM = svm_load_model("/home/zoltan/emorec/models/xy_afraid.model");
+    sadnessSVM = svm_load_model("/home/zoltan/emorec/models/xy_sad.model");
+    surpriseSVM = svm_load_model("/home/zoltan/emorec/models/xy_surprised.model");
 
 
       fcheck = false;
@@ -164,12 +148,15 @@ DetectorThread::DetectorThread()
       fTol=0.01;
 
       model.Load(ftFile);
+      model_nomem.Load(ftFile);
+      model_right.Load(ftFile);
+      model_right_nomem.Load(ftFile);
       tri=FACETRACKER::IO::LoadTri(triFile);
       kon=FACETRACKER::IO::LoadCon(conFile);
 
       //initialize camera and display window
       fps=0;
-      sss[256];
+      //sss[256];
       t0 = cvGetTickCount();
       fnum=0;
 
@@ -179,50 +166,22 @@ DetectorThread::DetectorThread()
       for (int i = 0; i<450; i++){
           plotPoints.push_back(0);
           plotPoints2.push_back(0);
+          blinkPoints.push_back(0);
+          headPointsRaw.push_back(0);
+          headPointsFiltered.push_back(0);
+          eyeBrowsRaw.push_back(0);
+          eyeBrowsFiltered.push_back(0);
+          roundness_vec.push_back(0);
+          roundness_vec_filtered.push_back(0);
       }
 
       storage_hand = NULL;
       storage_face = NULL;
-/*
-    vul_arg<const char*> dmFile(0,"Deformable model sequence fname","/home/zoltan/DeMoLib_v1_1_1/model/ckcolor/test-level_#.aam_di_linear");
-    vul_arg<const char*> imFile(0,"Image file to fit in","/home/zoltan/Asztal/151");
-    vul_arg<int>         nLevel("-l","Number of pyramid levels",1);
-    vul_arg<int>         filter("-f","Image filter (0=raw,1=greyscale)",1);
-    vul_arg<int>         maxIter("-i","Maximum iterations/level",20);
-    vul_arg<int>         flag("--flag","Fitting flag",0);
-    vul_arg<bool>        ascii("--ascii","Files are in ASCII format",false);
-    vul_arg<double>      iterDec("-d","Iteration decrement",1.0);
-
-    //get filenames for deformable models
-    vul_sequence_filename_map dm_map(dmFile(),0,nLevel()-1);
-
-    vcl_vector<vcl_string> dmFiles(nLevel());
-
-    for(int i = 0; i < nLevel(); i++){
-        dmFiles[i] = dm_map.image_name(i);
-    }
-
-    //create gui object
-
-    vcl_string imFname = imFile();
-
-
-    guiA = new DeMoLib_fit_gui(dmFiles,imFname,filter(),ascii());
-
-    guiA->SetMaxIter(maxIter());
-    guiA->SetDecIter(iterDec());
-    guiA->SetFitFlag(flag());
-
-    guiB = new DeMoLib_fit_gui(dmFiles,imFname,filter(),ascii());
-
-    guiB->SetMaxIter(maxIter());
-    guiB->SetDecIter(iterDec());
-    guiB->SetFitFlag(flag());
-*/
 
     cutoff = 50;
 
     frame = NULL;
+    frame_right = NULL;
     //frameToShow = NULL;
     previousFrame = NULL;
     black = false;
@@ -238,32 +197,14 @@ DetectorThread::DetectorThread()
     points[0] = (CvPoint2D32f*)cvAlloc(68*sizeof(CvPoint2D32f));
     points[1] = (CvPoint2D32f*)cvAlloc(68*sizeof(CvPoint2D32f));
 
-    modelA.id              = 0;
-    modelA.inUse           = false;
-    modelA.xShift          = 0;
-    modelA.yShift          = 30;
-    modelA.modelScale      = 1;
-    modelA.modelRot        = 0;
-    modelA.modelIterations = 3;
-    modelA.fit             = true;
-    modelA.memo            = false;
-
-    modelB.id              = 1;
-    modelB.inUse           = false;
-    modelB.xShift          = 0;
-    modelB.yShift          = 15;
-    modelB.modelScale      = 0.60;
-    modelB.modelRot        = 0;
-    modelB.modelIterations = 3;
-    modelB.fit             = true;
-    modelB.memo            = false;
-
     contrastSize = 40;
+
+
 
 }
 
 DetectorThread::~DetectorThread(){
-    cvReleaseHaarClassifierCascade( &cascade_face );
+    //cvReleaseHaarClassifierCascade( &cascade_face );
 }
 
 void DetectorThread::run(){
@@ -305,6 +246,7 @@ void DetectorThread::sendImage(){
     signalTime->start();
     captureSignalTime->start();
 
+
     emit imageProcessed(frameToSend);
 
     // Reading execution time
@@ -314,83 +256,54 @@ void DetectorThread::sendImage(){
 
 CvRect DetectorThread::detectFaces(IplImage *img){
 
-    if (storage_face){
-        cvReleaseMemStorage(&storage_face);
-    }
     storage_face = cvCreateMemStorage( 0 );
 
-    if (!storage_face){
-        exit(0);
-    }
-
-    CvSeq *faces = cvHaarDetectObjects(
-            img,
-            cascade_face,
-            storage_face,
-            1.1,
-            3,
-            0 ,
-            cvSize( 150, 150 ) );
+    CvSeq *faces=cvHaarDetectObjects(img,cascade_face,storage_face,1.1,3,0,cvSize(30,30));
 
     int max = 0, maxwidth = 0;
 
-    for(int i = 0 ; i < ( faces ? faces->total : 0 ) ; i++ ) {
-        CvRect *r = ( CvRect* )cvGetSeqElem( faces, i );
+    CvRect *r;
+
+    for(int i = 0 ; i < faces->total ; i++ ) {
+        r=(CvRect *)cvGetSeqElem(faces,i);
         if (r->width > maxwidth){
             maxwidth = r->width;
             max = i;
         }
-
     }
 
-    CvRect *maxFace = (CvRect*)cvGetSeqElem( faces, max );
+    r=(CvRect *)cvGetSeqElem(faces,max);
 
-    if (faces->total != 0){
-        return cvRect(maxFace->x, maxFace->y, maxFace->width, maxFace->height);
-    }else{
-        return cvRect(0,0,0,0);
-    }
+    cvReleaseMemStorage(&storage_face);
 
+    if (!faces->total) return cvRect(0,0,0,0);
+    else return cvRect(r->x, r->y, r->width, r->height);
 }
 
 CvRect DetectorThread::detectHands(IplImage *img){
 
-    if (storage_hand != NULL){
-        cvReleaseMemStorage(&storage_hand);
-    }
     storage_hand = cvCreateMemStorage( 0 );
 
-    if (!storage_hand){
-        exit(0);
-    }
-
-    CvSeq *hands = cvHaarDetectObjects(
-            img,
-            cascade_hand,
-            storage_hand,
-            1.1,
-            3,
-            0 ,
-            cvSize( 80, 80 ) );
+    CvSeq *hands=cvHaarDetectObjects(img,cascade_hand,storage_hand,1.1,3,0,cvSize(5,5));
 
     int max = 0, maxwidth = 0;
 
-    for(int i = 0 ; i < ( hands ? hands->total : 0 ) ; i++ ) {
-        CvRect *r = ( CvRect* )cvGetSeqElem( hands, i );
+    CvRect *r;
+
+    for(int i = 0 ; i < hands->total ; i++ ) {
+        r=(CvRect *)cvGetSeqElem(hands,i);
         if (r->width > maxwidth){
             maxwidth = r->width;
             max = i;
         }
-
     }
 
-    CvRect *maxHand = (CvRect*)cvGetSeqElem( hands, max );
+    r=(CvRect *)cvGetSeqElem(hands,max);
 
-    if (hands->total != 0){
-        return cvRect(maxHand->x, maxHand->y, maxHand->width, maxHand->height);
-    }else{
-        return cvRect(0,0,0,0);
-    }
+    cvReleaseMemStorage(&storage_hand);
+
+    if (!hands->total) return cvRect(0,0,0,0);
+    else return cvRect(r->x, r->y, r->width, r->height);
 
 }
 
@@ -399,33 +312,11 @@ void DetectorThread::setBlack(bool state){
     newParameters = true;
 }
 
-void DetectorThread::writeShape(){
-   /* cout<<"writeshape"<<endl;
-
-    QString pts,jpg;
-    QDateTime myQDateTime;
-    QString DateString = myQDateTime.currentDateTime().toString("yyMMdd_hhmmss");
-    jpg = "/home/zoltan/DeMoLib_v1_1_1/data/sajat/" + DateString + ".jpg";
-    pts = "/home/zoltan/DeMoLib_v1_1_1/data/sajat/" + DateString + ".pts";
-    QByteArray _jpg = jpg.toLocal8Bit();
-    QByteArray _pts = pts.toLocal8Bit();
-
-    gui->WriteShape(_pts.data());
-    cvSaveImage(_jpg.data(),frameToShow,0);
-
-    /*
-
-        pts file also needs to be saved
-
-     */
-
-}
-
 double DetectorThread::distance(CvPoint pt1, CvPoint pt2){
     return sqrt(pow(pt1.x-pt2.x,2) + pow(pt1.y-pt2.y,2));
 }
 
-void DetectorThread::newCapturedImage(IplImage* img){
+void DetectorThread::newCapturedImage(IplImage* img, IplImage *img_right){
 
     // Reading signal transition time
     cout<<"CaptureThread to DetectorThread image signal transition time was: "<<toDetectorSignalTime->elapsed()<<"ms"<<endl;
@@ -446,99 +337,28 @@ void DetectorThread::newCapturedImage(IplImage* img){
     cvCopy(img, frame);
     cvReleaseImage(&img);
 
+    if (frame_right) cvReleaseImage(&frame_right);
+
+    frame_right = cvCreateImage( cvSize(img_right->width,img_right->height), img_right->depth, img_right->nChannels );
+    cvCopy(img_right, frame_right);
+    cvReleaseImage(&img_right);
+
+
+
+    cv::Mat MATframe = frame;
+    cv::Mat MATframe_right = frame_right;
+    CvMat _src = MATframe;
+    CvMat _src2 = MATframe_right;
+
+    cvRemap(&_src, &_src, mx1, my1);
+    cvRemap(&_src2, &_src2, mx2, my2);
+
     waitForImage = false;
 
     // Reading function execution time
     cout<<"Incoming frame preprocessing time was: "<<incomingTimer->elapsed()<<"ms"<<endl;
 }
-/*
-void DetectorThread::enhanceContrast(IplImage* img, int x, int y, int width, int height){
 
-    IplImage *red, *green, *blue;
-
-    red=cvCreateImage( cvGetSize(img), 8, 1 );
-    green=cvCreateImage( cvGetSize(img), 8, 1 );
-    blue=cvCreateImage( cvGetSize(img), 8, 1 );
-
-    cvSplit(img, blue, green, red, NULL);
-
-        cvSetImageROI(red,cvRect(x,y,width,height));
-        cvSetImageROI(green,cvRect(x,y,width,height));
-        cvSetImageROI(blue,cvRect(x,y,width,height));
-
-        cvEqualizeHist(red,red);
-        cvEqualizeHist(green,green);
-        cvEqualizeHist(blue,blue);
-
-        cvResetImageROI(red);
-        cvResetImageROI(green);
-        cvResetImageROI(blue);
-
-    cvMerge(blue, green, red, NULL, img);
-
-    cvReleaseImage(&red);
-    cvReleaseImage(&green);
-    cvReleaseImage(&blue);
-}
-/*
-void DetectorThread::drawAnnotation(IplImage* img, vnl_vector<double> s,CvScalar color){
-
-    for (int i = 0; i< 68; i++){
-        cvCircle(img,cvPoint( s[2*i], s[2*i+1] ),3,color,-1,8,0);
-    }
-
-}
-
-void DetectorThread::drawAnnotationLines(IplImage* img, vnl_vector<double> s){
-    cvLine(img, cvPoint( s[2*JOBB_SZEMSZEL], s[2*JOBB_SZEMSZEL+1] ),
-           cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-
-    cvLine(img, cvPoint( s[2*BAL_SZEMSZEL], s[2*BAL_SZEMSZEL+1] ),
-           cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-
-    cvLine(img, cvPoint( s[2*ALL_KEZDET], s[2*ALL_KEZDET+1] ),
-           cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-
-    cvLine(img, cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ),
-           cvPoint( s[2*ALL_VEG], s[2*ALL_VEG+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-
-    cvLine(img, cvPoint( s[2*FELSO_AJAK], s[2*FELSO_AJAK+1] ),
-           cvPoint( s[2*ALSO_AJAK], s[2*ALSO_AJAK+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-
-    cvLine(img, cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ),
-           cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ), cvScalar(0, 255, 0, 0), 2, 8, 0);
-}
-
-
-/*
-
-double DetectorThread::calculateSmile(vnl_vector<double> s){
-    double smile = 0;
-    double felsoajak_alsoajak = distance(cvPoint( s[2*FELSO_AJAK], s[2*FELSO_AJAK+1] ), cvPoint( s[2*ALSO_AJAK], s[2*ALSO_AJAK+1] ));
-    double balszajszel_jobbszajszel = distance(cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ), cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ));
-    double allkezdet_balszajszel = distance(cvPoint( s[2*ALL_KEZDET], s[2*ALL_KEZDET+1] ), cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ));
-    double jobbszajszel_allveg = distance(cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ), cvPoint( s[2*ALL_VEG], s[2*ALL_VEG+1] ) );
-    double balszemszel_balszajszel = distance(cvPoint( s[2*BAL_SZEMSZEL], s[2*BAL_SZEMSZEL+1] ), cvPoint( s[2*BAL_SZAJSZEL], s[2*BAL_SZAJSZEL+1] ));
-    double jobbszajszel_jobbszemszel = distance(cvPoint( s[2*JOBB_SZAJSZEL], s[2*JOBB_SZAJSZEL+1] ), cvPoint( s[2*JOBB_SZEMSZEL], s[2*JOBB_SZEMSZEL+1] ));
-    double balszemszel_jobbszemszel = distance(cvPoint( s[2*BAL_SZEMSZEL], s[2*BAL_SZEMSZEL+1] ), cvPoint( s[2*JOBB_SZEMSZEL], s[2*JOBB_SZEMSZEL+1] ));
-    double allkezdet_allveg = distance(cvPoint( s[2*ALL_KEZDET], s[2*ALL_KEZDET+1] ), cvPoint( s[2*ALL_VEG], s[2*ALL_VEG+1] ) );
-
-    smile = 10 *
-            felsoajak_alsoajak *
-            balszajszel_jobbszajszel /
-            allkezdet_balszajszel /
-            jobbszajszel_allveg /
-            balszemszel_balszajszel /
-            jobbszajszel_jobbszemszel *
-            balszemszel_jobbszemszel *
-            balszemszel_jobbszemszel;
-
-    if ((allkezdet_allveg/balszemszel_jobbszemszel < 1.6) )
-      return smile;
-    else
-      return 0;
-}
-*/
 bool DetectorThread::processFrame(){
 
     // Starting function execution time measuring
@@ -554,8 +374,9 @@ bool DetectorThread::processFrame(){
 
     CvRect r;
 
-    QFuture<CvRect> future = QtConcurrent::run(this,&DetectorThread::detectFaces,frame);
-    //CvRect r = detectFaces(frame);
+    //QFuture<CvRect> future;
+    check_ctr++;
+    if (check_ctr > 20) r = detectFaces(frame);//future = QtConcurrent::run(this,&DetectorThread::detectFaces,frame);
 
 
 /*
@@ -568,14 +389,14 @@ bool DetectorThread::processFrame(){
 
 
     // It has to find hands on multiple frames in a row to ensure the proper selection
-    CvRect r2 = detectHands(frame);
-
+   // CvRect r2 = detectHands(frame);
+/*
     if (r2.width){
         handCount++;
     }else{
         handCount = 0;
     }
-
+*/
 
 
     // Reading elapsed time for hand detection
@@ -596,63 +417,186 @@ bool DetectorThread::processFrame(){
 
     //grab image, resize and flip
     frameMat = cv::Mat(frame,true);
-    if(scale == 1)im = frameMat;
+    if(scale == 1)im = frameMat.clone();
     else cv::resize(frameMat,im,cv::Size(scale*frameMat.cols,scale*frameMat.rows));
     //cv::flip(im,im,1);
     cv::cvtColor(im,gray,CV_BGR2GRAY);
 
     //track this image
+
     std::vector<int> wSize; if(failed)wSize = wSize2; else wSize = wSize1;
     if(model.Track(gray,wSize,fpd,nIter,clamp,fTol,fcheck) == 0){
       int idx = model._clm.GetViewIdx(); failed = false;
       Draw(im,model._shape,kon,tri,model._clm._visi[idx],drawNumbers);
+      for (int i = 0; i<66; i++){
+          model._shape2.at<double>(i,0) = model._shape2.at<double>(i,0) /*- model._shape2.at<double>(27,0) */+ 200;
+          model._shape2.at<double>(i +66,0) = model._shape2.at<double>(i + 66,0) /*- model._shape2.at<double>(27 + 66,0) */+ 50;
+      }
+      Draw(im,model._shape2,kon,tri,model._clm._visi[idx],drawNumbers);
     }else{
       if(show){cv::Mat R(im,cvRect(0,0,150,50)); R = cv::Scalar(0,0,255);}
       model.FrameReset(); failed = true;
     }
 
+    //grab image, resize and flip
+    frameMat_right = cv::Mat(frame_right,true);
+    if(scale == 1)im_right = frameMat_right.clone();
+    else cv::resize(frameMat_right,im_right,cv::Size(scale*frameMat_right.cols,scale*frameMat_right.rows));
+    //cv::flip(im,im,1);
+    cv::cvtColor(im_right,gray_right,CV_BGR2GRAY);
+
+    //track this image
+
+    if(failed)wSize = wSize2; else wSize = wSize1;
+    if(model_right.Track(gray_right,wSize,fpd,nIter,clamp,fTol,fcheck) == 0){
+      int idx = model_right._clm.GetViewIdx(); failed = false;
+      Draw(im_right,model_right._shape,kon,tri,model_right._clm._visi[idx],drawNumbers);
+    }else{
+      if(show){cv::Mat R(im_right,cvRect(0,0,150,50)); R = cv::Scalar(0,0,255);}
+      model_right.FrameReset(); failed = true;
+    }
+
+    if (check_ctr > 20){
+
+        check_ctr = 0;
+
+        model_nomem.FrameReset();
+        model_right_nomem.FrameReset();
+
+        if(model_nomem.Track(gray,wSize,fpd,nIter,clamp,fTol,fcheck) == 0){
+          int idx = model_nomem._clm.GetViewIdx(); failed = false;
+          Draw(im,model_nomem._shape,kon,tri,model_nomem._clm._visi[idx],drawNumbers);
+        }else{
+          if(show){cv::Mat R(im,cvRect(0,0,150,50)); R = cv::Scalar(0,0,255);}
+          model_nomem.FrameReset(); failed = true;
+        }
+
+        if(model_right_nomem.Track(gray_right,wSize,fpd,nIter,clamp,fTol,fcheck) == 0){
+          int idx = model_right_nomem._clm.GetViewIdx(); failed = false;
+          Draw(im_right,model_right_nomem._shape,kon,tri,model_right_nomem._clm._visi[idx],drawNumbers);
+        }else{
+          if(show){cv::Mat R(im_right,cvRect(0,0,150,50)); R = cv::Scalar(0,0,255);}
+          model_right_nomem.FrameReset(); failed = true;
+        }
+
+        point mem, nomem;
+        for (int i = 17; i < 36; i++){
+            mem.x = model._shape.at<double>(i,0);
+            mem.y = model._shape.at<double>(i+66,0);
+            nomem.x = model_nomem._shape.at<double>(i,0);
+            nomem.y = model_nomem._shape.at<double>(i+66,0);
+            if (distance(mem,nomem) > 10){
+                model.FrameReset();
+                break;
+            }
+        }
+        for (int i = 17; i < 36; i++){
+            mem.x = model_right._shape.at<double>(i,0);
+            mem.y = model_right._shape.at<double>(i+66,0);
+            nomem.x = model_right_nomem._shape.at<double>(i,0);
+            nomem.y = model_right_nomem._shape.at<double>(i+66,0);
+            if (distance(mem,nomem) > 10){
+                model_right.FrameReset();
+                break;
+            }
+        }
+
+        for (int i = 0; i < 4; i++){
+            if ( (abs(model._shape.at<double>(i,0) - model_nomem._shape.at<double>(i,0)) > 10) ||
+                (abs(model._shape.at<double>(16-i,0) - model_nomem._shape.at<double>(16-i,0)) > 10) ) {
+                model.FrameReset();
+                break;
+            }
+        }
+        for (int i = 0; i < 4; i++){
+            if ( (abs(model_right._shape.at<double>(i,0) - model_right_nomem._shape.at<double>(i,0)) > 10) ||
+                (abs(model_right._shape.at<double>(16-i,0) - model_right_nomem._shape.at<double>(16-i,0)) > 10) ) {
+                model_right.FrameReset();
+                break;
+            }
+        }
+
+        if ( r.width ){
+            double out = 0;
+            for (int i = 0; i < 66; i++){
+                if (model._shape.at<double>(i,0)<r.x){
+                    out+=abs(model._shape.at<double>(i,0)-r.x);
+                    continue;
+                }
+                if (model._shape.at<double>(i,0)>(r.x+r.width)){
+                    out+=abs(model._shape.at<double>(i,0)-(r.x+r.width));
+                    continue;
+                }
+            }
+
+
+            if (out>30){
+                model.FrameReset();
+                return false;
+            }
+        }
+
+    }
+
+
+
+
     frameToShow = im;
-
-    future.waitForFinished();
-
-    r = future.result();
 
     // Reading FaceTracker execution time
     cout<<"FaceTracker execution time was: "<<FaceTrackerTimer->elapsed()<<"ms"<<endl;
 
+/*
+    if (r.width){
+        cvRectangle( &frameToShow,
+                     cvPoint( r.x, r.y ),
+                     cvPoint( r.x + r.width, r.y + r.height ),
+                     CV_RGB( 255, 0, 0 ), 1, 8, 0 );
 
-    if (r.width)
-    cvRectangle( &frameToShow,
-                 cvPoint( r.x, r.y ),
-                 cvPoint( r.x + r.width, r.y + r.height ),
-                 CV_RGB( 255, 0, 0 ), 1, 8, 0 );
+        cvSetImageROI(frame, r);
+        r2 = detectHands(frame);
+        if (r2.width)
+            cvRectangle( &frameToShow,
+                         cvPoint( r.x + r2.x, r.y + r2.y ),
+                         cvPoint( r.x + r2.x + r2.width, r.y + r2.y + r2.height ),
+                         CV_RGB( 0, 255, 0 ), 1, 8, 0 );
 
+        cvResetImageROI(frame);
+
+
+
+    }
+/*
     if (r2.width)
     cvRectangle( &frameToShow,
                  cvPoint( r2.x, r2.y ),
                  cvPoint( r2.x + r2.width, r2.y + r2.height ),
-                 CV_RGB( 255, 0, 0 ), 1, 8, 0 );
+                 CV_RGB( 0, 255, 0 ), 1, 8, 0 );
+*/
 
 
-    if (r.width){
-        double out = 0;
-        for (int i = 0; i < 66; i++){
-            if (model._shape.at<double>(i,0)<r.x){
-                out+=abs(model._shape.at<double>(i,0)-r.x);
-                continue;
-            }
-            if (model._shape.at<double>(i,0)>(r.x+r.width)){
-                out+=abs(model._shape.at<double>(i,0)-(r.x+r.width));
-                continue;
-            }
-        }
+    /*
+     *  Checking the reliability of the model fitting
+     */
 
-
-        if (out>30){
-            model.FrameReset();
-            return false;
-        }
+    // from the rotated back model parameters
+    // moving to point#28 starting from 1...
+/*
+    point center2;
+    center2.x = model._shape2.at<double>(27,0);
+    center2.y = model._shape2.at<double>(27+66,0);
+    for (int i = 0; i < 66; i++){
+        model._shape2.at<double>(i,0) -= center2.x;
+        model._shape2.at<double>(i+66,0) -= center2.y;
     }
+
+    // check if upper lip point is above the bottom nose point
+    if (model._shape2.at<double>(51+66,0) <= model._shape2.at<double>(33+66,0)) model.FrameReset();
+
+    // nem jó a model reset, mert akkor máshogy áll be szarul, jelezni kéne hogy csináljon valamit a felhasználó mert nem ok
+
+*/
+
 
     point points[10];
 
@@ -686,47 +630,122 @@ bool DetectorThread::processFrame(){
     points[9].x = model._shape.at<double>(16,0);
     points[9].y = model._shape.at<double>(16+66,0);
 
+    //cvCircle(&frameToShow,cvPoint(points[6].x,points[6].y),5,cvScalar(255,255,255,0),-1,8,0);
+    //cvCircle(&frameToShow,cvPoint(points[7].x,points[7].y),5,cvScalar(255,255,255,0),-1,8,0);
 
-  //  cvCircle(&frameToShow,cvPoint(points[0].x,points[0].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[1].x,points[1].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[2].x,points[2].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[3].x,points[3].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[4].x,points[4].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[5].x,points[5].y),5,cvScalar(255,255,255,0),-1,8,0);
-    cvCircle(&frameToShow,cvPoint(points[6].x,points[6].y),5,cvScalar(255,255,255,0),-1,8,0);
-    cvCircle(&frameToShow,cvPoint(points[7].x,points[7].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[8].x,points[8].y),5,cvScalar(255,255,255,0),-1,8,0);
-  //  cvCircle(&frameToShow,cvPoint(points[9].x,points[9].y),5,cvScalar(255,255,255,0),-1,8,0);
+
+
+
+    /*********          Pupil detection             *************/
 /*
+      //  cv::Mat subImg = im(cvRect(points[0].x, points[0].y - 20, 20, 20));
+        rectangle(frameMat, cvPoint(points[0].x, points[0].y - 10), cvPoint(points[1].x, points[1].y + 10), cvScalar(255,255,255,0),1,8,0);
+        cv::Mat subImg = frameMat(cvRect(points[0].x, points[0].y - 10, points[1].x - points[0].x, 20));
+        //cv::Mat subImg = im(cv::Range(points[0].x, points[0].y), cv::Range(points[1].x, points[1].y));
+        cv::Mat pupil_gray;
+        cv::cvtColor(subImg, pupil_gray, CV_BGR2GRAY);
+        cv::equalizeHist(pupil_gray,pupil_gray);
+        cv::threshold(pupil_gray, pupil_gray, 50, 255, cv::THRESH_BINARY);
 
-  // 0 1:0.286838 2:0.612854 3:0.919051 4:0.957818 5:0.762663 6:0.766063
-    // 1 1:0.173600 2:0.452918 3:0.758034 4:0.809423 5:0.641132 6:0.661205
 
-    nodes[0].index = 1;
-    nodes[0].value = distance(points[6],points[7])/distance(points[0],points[3]);
+        cv::dilate(pupil_gray,pupil_gray,cv::Mat());
 
-    nodes[1].index = 2;
-    nodes[1].value = distance(points[4],points[5])/distance(points[0],points[3]);
+        pupil_gray = ~pupil_gray;
 
-    nodes[2].index = 3;
-    nodes[2].value = distance(points[4],points[8])/distance(points[0],points[3]);
+        int min_x = points[1].x - points[0].x, min_y = 20, max_x = 0, max_y = 0;
 
-    nodes[3].index = 4;
-    nodes[3].value = distance(points[5],points[9])/distance(points[0],points[3]);
+        for (int i = 0; i < 20; i++)
+            for (int j = 0; j < points[1].x - points[0].x ; j++){
+                if (pupil_gray.at<uchar>(cv::Point(j,i)) == 255){
+                    if (j > max_x) max_x = j;
+                    if (j < min_x) min_x = j;
+                }
+            }
 
-    nodes[4].index = 5;
-    nodes[4].value = distance(points[0],points[4])/distance(points[0],points[3]);
 
-    nodes[5].index = 6;
-    nodes[5].value = distance(points[3],points[5])/distance(points[0],points[3]);
+        for (int j = 0; j < points[1].x - points[0].x ; j++)
+            for (int i = 0; i < 20; i++){
+                    if (pupil_gray.at<uchar>(cv::Point(j,i)) == 255){
+                        if (i > max_y) max_y = i;
+                        if (i < min_y) min_y = i;
+                    }
+                }
 
-    nodes[6].index = -1;
 
-*/
+        double width = max_x-min_x;
+        double height = max_y - min_y;
+        double roundness = height*height/(width*width);
 
+        if (roundness < 0.2) cv::circle(pupil_gray,cv::Point(1,1),1,cv::Scalar(255,255,255));
+
+        std::rotate(roundness_vec.begin(),roundness_vec.begin()+1,roundness_vec.end());
+        roundness_vec.at(449) = 50*roundness;
+
+        cout << "ROUNDNESS: " << roundness << endl;
+
+        cv::rectangle(pupil_gray,cv::Point(min_x,min_y),cv::Point(max_x,max_y),cv::Scalar(255,255,255));
+
+        cv::cvtColor(pupil_gray, subImg, CV_GRAY2BGR);
+        //frameToShow = subImg;
+
+
+    /************************************************************/
+
+        /***************       Eye blink detection        ***********/
+            point left_upper, left_bottom;
+            left_upper.x = model._shape.at<double>(20,0);
+            left_upper.y = model._shape.at<double>(20+66,0);
+            left_bottom.x = model._shape.at<double>(38,0);
+            left_bottom.y = model._shape.at<double>(38+66,0);
+            std::rotate(plotPoints.begin(),plotPoints.begin()+1,plotPoints.end());
+            plotPoints.pop_back();
+            plotPoints.push_back(100*distance(left_upper,left_bottom)/distance(points[0],points[3]));
+
+            double head = model._clm._pglobl.at<double>(1,0) + model._clm._pglobl.at<double>(2,0) + model._clm._pglobl.at<double>(3,0);
+            head = head * 100;
+            std::rotate(headPointsRaw.begin(),headPointsRaw.begin()+1,headPointsRaw.end());
+            headPointsRaw.at(449) = head;
+
+            std::rotate(eyeBrowsRaw.begin(),eyeBrowsRaw.begin()+1,eyeBrowsRaw.end());
+            eyeBrowsRaw.at(449) = 100*(model._shape.at<double>(27+66,0)-model._shape.at<double>(19+66,0))/distance(points[0],points[3]);
+
+            int high_pass_kernel[3] = {-3,0,3};
+
+
+            for (int i = 1; i < 449; i++){
+                eyeBrowsFiltered.at(i) = 0;
+                for (int j = -1; j< 2; j++)
+                    eyeBrowsFiltered.at(i) += 2*(eyeBrowsRaw.at(i+j) * high_pass_kernel[j+1]);
+            }
+            for (int i = 1; i < 449; i++){
+                headPointsFiltered.at(i) = 0;
+                for (int j = -1; j< 2; j++)
+                    headPointsFiltered.at(i) += 2*(headPointsRaw.at(i+j) * high_pass_kernel[j+1]);
+            }
+            for (int i = 1; i < 449; i++){
+                roundness_vec_filtered.at(i) = 0;
+                for (int j = -1; j< 2; j++)
+                    roundness_vec_filtered.at(i) += (roundness_vec.at(i+j) * high_pass_kernel[j+1]);
+            }
+
+            bool still = true;
+            for (int i = 0; i < 5; i++){
+                if (abs(headPointsFiltered.at(449-i)) > 25) still = false;
+            }
+            for (int i = 1; i < 449; i++){
+                blinkPoints.at(i) = 0;
+                for (int j = -1; j< 2; j++)
+                    blinkPoints.at(i) += 2*(plotPoints.at(i+j) * high_pass_kernel[j+1]);
+            }
+
+            if ( (blinkPoints.at(448) > 20) && still && (eyeBrowsFiltered.at(448) < 20)) cvCircle(&frameToShow,cvPoint(600,50),5,cvScalar(255,255,255,0),-1,8,0);
+
+
+
+            emit plotPointsSignal(eyeBrowsFiltered, blinkPoints);
+        /************************************************************/
 
     const cv::Mat& pose = model._clm._pglobl;
-
 
     /*
                  Y
@@ -755,6 +774,8 @@ bool DetectorThread::processFrame(){
     double siny = pose.at<double>(2, 0);
     double sinz = pose.at<double>(3, 0);
 
+    siny-=0.2;
+
     double cosx = cos(asin(sinx));
     double cosy = cos(asin(siny));
     double cosz = cos(asin(sinz));
@@ -775,15 +796,15 @@ bool DetectorThread::processFrame(){
     double cx = 0;
     double cy = 0;
     double cz = 0;
-    double ez = 0.05;
+    //double ez = 0.05;
 
     double dxx = cosy*(sinz*(xy-cy)) + cosz*(xx-cx)-siny*(xz-cz);
     double dxy = sinx*(cosy*(xz-cz)+siny*(sinz*(xy-cy)+cosz*(xx-cx))) + cosx*(cosz*(xy-cy)-sinz*(xx-cx)) ;
-    double dxz = cosx*(cosy*(xz-cz)+siny*(sinz*xy+cosz*xx)) - sinx*(cosz*xy-sinz*xx) ;
+    //double dxz = cosx*(cosy*(xz-cz)+siny*(sinz*xy+cosz*xx)) - sinx*(cosz*xy-sinz*xx) ;
 
     double dyx = cosy*(sinz*(yy-cy)) + cosz*(yx-cx)-siny*(yz-cz);
     double dyy = sinx*(cosy*(yz-cz)+siny*(sinz*(yy-cy)+cosz*(yx-cx))) + cosx*(cosz*(yy-cy)-sinz*(yx-cx)) ;
-    double dyz = cosx*(cosy*(yz-cz)+siny*(sinz*yy+cosz*yx)) - sinx*(cosz*yy-sinz*yx) ;
+    //double dyz = cosx*(cosy*(yz-cz)+siny*(sinz*yy+cosz*yx)) - sinx*(cosz*yy-sinz*yx) ;
 
     double dzx = cosy*(sinz*(zy-cy)) + cosz*(zx-cx)-siny*(zz-cz);
     double dzy = -(sinx*(cosy*(zz-cz)+siny*(sinz*(zy-cy)+cosz*(zx-cx))) + cosx*(cosz*(zy-cy)-sinz*(zx-cx))) ;
@@ -807,23 +828,23 @@ bool DetectorThread::processFrame(){
     // dvc
     double dvc = (model._shape.at<double>(27+66,0)-240) * 0.1375;
     // gamma
-    double gamma = asin(pose.at<double>(1, 0));
+    //double gamma = asin(pose.at<double>(1, 0));
     // béta
-    double beta = atan(dvc/dhc);
+    //double beta = atan(dvc/dhc);
     // alfa
-    double alfa = gamma-beta;
+    //double alfa = gamma-beta;
     // da distance from the camera on the Y axis
-    double da = tan(alfa)*dhc + dvc;
+    //double da = tan(alfa)*dhc + dvc;
 
     double dxc = (model._shape.at<double>(27,0)-320) * 0.1375;
     // gamma
-    double xgamma = asin(pose.at<double>(2, 0));
+    //double xgamma = asin(pose.at<double>(2, 0));
     // béta
-    double xbeta = atan(dxc/dhc);
+    //double xbeta = atan(dxc/dhc);
     // alfa
-    double xalfa = xgamma-xbeta;
+    //double xalfa = xgamma-xbeta;
     // da distance from the camera on the Y axis
-    double xda = tan(xalfa)*dhc + dxc;
+    //double xda = tan(xalfa)*dhc + dxc;
 
     // t
     double t = dhc/dzz;
@@ -876,7 +897,7 @@ bool DetectorThread::processFrame(){
     p2.x = model._shape.at<double>(27,0);
     p2.y = model._shape.at<double>(27+66,0);
 
-
+/*
     if (r.width){
         cvCircle(&frameToShow,cvPoint(r.x+r.width/2,r.y+r.height/2),5,cvScalar(255,255,255,0),-1,8,0);
 
@@ -889,7 +910,8 @@ bool DetectorThread::processFrame(){
             return false;
         }
     }
-
+    */
+/*
     for (int i = 0; i<66; i++){
         p1.x = model._shape.at<double>(i,0);
         p1.y = model._shape.at<double>(i+66,0);
@@ -899,7 +921,91 @@ bool DetectorThread::processFrame(){
     }
 
     nodes[66].index = -1;
+    */
 
+
+
+    int disparity = abs(model._shape.at<double>(27,0) - model_right._shape.at<double>(27,0));
+    cout << "disparity: " << disparity << endl;
+
+    double Z = cvGetReal2D(Q,2,3);
+    double W = disparity * cvGetReal2D(Q,3,2) + cvGetReal2D(Q,3,3);
+
+    Z = Z / W;
+
+    CvFont d_font;
+    cvInitFont(&d_font, CV_FONT_HERSHEY_SIMPLEX, 0.8, 0.8, 0, 1, 8);
+
+    std::ostringstream d_osstream;
+    d_osstream << Z;
+    std::string d_string_x = d_osstream.str();
+    cvPutText(&frameToShow, d_string_x.c_str(), cvPoint(200,30), &d_font, cvScalar(255, 255, 255, 0));
+
+    // moving to point#28 starting from 1...
+    point center;
+    center.x = model._shape.at<double>(27,0);
+    center.y = model._shape.at<double>(27+66,0);
+    for (int i = 0; i < 66; i++){
+        model._shape.at<double>(i,0) -= center.x;
+        model._shape.at<double>(i+66,0) -= center.y;
+    }
+
+    point p36,p45,p48,p54,p51,p57;
+
+    p36.x = model._shape.at<double>(36,0);
+    p36.y = model._shape.at<double>(36+66,0);
+    p45.x = model._shape.at<double>(45,0);
+    p45.y = model._shape.at<double>(45+66,0);
+    p48.x = model._shape.at<double>(48,0);
+    p48.y = model._shape.at<double>(48+66,0);
+    p51.x = model._shape.at<double>(51,0);
+    p51.y = model._shape.at<double>(51+66,0);
+    p54.x = model._shape.at<double>(54,0);
+    p54.y = model._shape.at<double>(54+66,0);
+    p57.x = model._shape.at<double>(57,0);
+    p57.y = model._shape.at<double>(57+66,0);
+
+    for (int i = 0; i<66; i++){
+
+        nodes[2*i].index = 2*i+1;
+        nodes[2*i].value = model._shape.at<double>(i,0) / distance(p36,p45);
+        nodes[2*i+1].index = 2*i+2;
+        nodes[2*i+1].value = model._shape.at<double>(i+66,0) / distance(p36,p45);
+        // scaling
+
+        double scale_low = scale_mtx.at<double>(2*i,0);
+        double scale_high = scale_mtx.at<double>(2*i,1);
+        double scale_avg = (scale_high + scale_low)/2;
+        double scale_mid_point = (scale_high - scale_low)/2;
+        nodes[2*i].value = (nodes[2*i].value - scale_avg)/scale_mid_point;
+        // scaling
+
+        scale_low = scale_mtx.at<double>(2*i+1,0);
+        scale_high = scale_mtx.at<double>(2*i+1,1);
+        scale_avg = (scale_high + scale_low)/2;
+        scale_mid_point = (scale_high - scale_low)/2;
+        nodes[2*i+1].value = (nodes[2*i+1].value - scale_avg)/scale_mid_point;
+
+
+    }
+
+    for (int i = 0; i < 132; i++){
+        cout << " " << nodes[i].value << " ";
+    }
+
+     nodes[132].index = -1;
+
+/*
+    nodes[0].index = 1;
+    nodes[0].value = distance(p36,p48) / distance(p36,p45);
+    nodes[0].index = 2;
+    nodes[0].value = distance(p45,p54) / distance(p36,p45);
+    nodes[0].index = 3;
+    nodes[0].value = distance(p48,p54) / distance(p36,p45);
+    nodes[0].index = 4;
+    nodes[0].value = distance(p51,p57) / distance(p36,p45);
+    nodes[5].index = -1;
+*/
     double smileResult;
     double angryResult;
     double contemptResult;
@@ -913,14 +1019,27 @@ bool DetectorThread::processFrame(){
 
     int measureInterval = 1;
     for (int i = 0; i< measureInterval; i++){
-    smileResult = svm_predict(smileSVM, nodes);
-    angryResult = svm_predict(angrySVM, nodes);
-    contemptResult = svm_predict(contemptSVM, nodes);
-    disgustResult = svm_predict(disgustSVM, nodes);
-    fearResult = svm_predict(fearSVM, nodes);
-    sadnessResult = svm_predict(sadnessSVM, nodes);
-    surpriseResult = svm_predict(surpriseSVM, nodes);
-}
+        if (sinx < 0.2 && sinx > -0.2){
+            smileResult = svm_predict(smileSVM, nodes);
+            angryResult = svm_predict(angrySVM, nodes);
+            contemptResult = svm_predict(contemptSVM, nodes);
+            disgustResult = svm_predict(disgustSVM, nodes);
+            fearResult = svm_predict(fearSVM, nodes);
+            sadnessResult = svm_predict(sadnessSVM, nodes);
+            surpriseResult = svm_predict(surpriseSVM, nodes);
+        }else{
+            smileResult = 0;
+            angryResult = 0;
+            contemptResult = 0;
+            disgustResult = 0;
+            fearResult = 0;
+            sadnessResult = 0;
+            surpriseResult = 0;
+        }
+    }
+
+    cout << "smile: " <<smileResult << endl;
+    cout << "surprise: " <<surpriseResult << endl;
     // Reading elapsed time for SVM regression
     double elapsedTime = (double)SVMTimer->elapsed()/measureInterval;
     cout<<"SVM regression time for all emotions was: "<<elapsedTime<<"ms"<<endl;
@@ -933,261 +1052,35 @@ bool DetectorThread::processFrame(){
     spectrumVolumes.push_back(disgustResult*100);
     spectrumVolumes.push_back(fearResult*100);
     spectrumVolumes.push_back(sadnessResult*100);
-    spectrumVolumes.push_back(surpriseResult*100);
+    spectrumVolumes.push_back((surpriseResult)*100);
 
     emit volumes(spectrumVolumes);
     emit smilePercentage(smileResult*100);
     if (smileResult*100>cutoff) emit smileDetected();
 
-    if (handCount > 10){
-        emit handSelected(linex,liney);
-    }
+    //if (handCount > 10){
+    if ( (blinkPoints.at(448) > 20) && still /*&& (roundness < 0.2)*/) emit handSelected(linex,liney);
+    //}
     if (surpriseResult*100>50){
         emit surpriseSelected(linex,liney);
     }
     // Reading function execution time
     cout<<"processFrame execution time was: "<<processFrameTimer->elapsed()<<"ms"<<endl;
 
-
-/*
-    rotate(plotPoints.begin(), plotPoints.begin()+1, plotPoints.end());
-    plotPoints.pop_back();
-    plotPoints.push_back((int)(result*100));
-
-    rotate(plotPoints2.begin(), plotPoints2.begin()+1, plotPoints2.end());
-    plotPoints2.pop_back();
-    plotPoints2.push_back((int)(result2*100));
+    int x = model._shape.at<double>(0,0) + center.x - 50;
+    int y = model._shape.at<double>(19+66,0) - 50 + center.y;
+    int width = model._shape.at<double>(16,0) - model._shape.at<double>(0,0) + 100;
+    int height = model._shape.at<double>(8+66,0) - model._shape.at<double>(19+66,0) + 100;
+    cout << "x: " << x << "y: " << y << "width: " << width << "height: " << height << endl;
+    /*cvSetImageROI(&frameToShow,cvRect(x,y,width,height));
+    IplImage* img_dst = cvCreateImage( cvSize( width, height ), frameToShow.depth, frameToShow.nChannels );
+    cvCopy( &frameToShow, img_dst);
+    cvResetImageROI(&frameToShow);
+    cvResize(img_dst, &frameToShow, CV_INTER_CUBIC);
+    cvReleaseImage(&img_dst);
+    //cvRectangle(&frameToShow, cvPoint(x,y),cvPoint(x+width,y+height),cvScalar(255,255,255));
 */
-    //emit plotPointsSignal(plotPoints,plotPoints2);
-
     return true;
-/*
-    cvCopy(frame, frameToShow);
-
-    CvRect r = detectFaces(frame);
-
-    if (!r.width){
-
-        emit faceDetected(false);
-        emit smilePercentage(0);
-
-    }else{
-
-        fitMutex.lock();
-        cout<<"process begin"<<endl;
-
-        emit faceDetected(true);
-
-        if (contrastSize)
-        enhanceContrast(frameToShow, r.x - contrastSize, r.y - contrastSize, r.width + 2*contrastSize, r.height + 2*contrastSize);
-
-        cvCopy( frameToShow, frameToAAM, NULL );
-
-        if (black){
-            cvSetZero(frameToShow);
-        }
-
-        vnl_vector<double> s;
-
-
-
-
-        if (modelA.inUse){
-
-            if (modelA.memo){
-                guiA->LoadImageMemo(frameToAAM,1);
-            }else{
-                guiA->LoadImage(frameToAAM,1,r.x + r.width/2 + modelA.xShift*r.width/100,r.y + r.height/2 + modelA.yShift*r.height/100, (double)modelA.modelScale*r.width/100, modelA.modelRot);
-            }
-
-            if (modelA.fit){
-               for (int i = 0; i < modelA.modelIterations; i++) guiA->Fit();
-            }
-
-            guiA->__model.GetShape(s,0);
-            drawAnnotation(frameToShow,s,cvScalar(255, 0, 0, 0));
-
-        }
-
-        if (modelB.inUse){
-            if (modelB.memo){
-                guiB->LoadImageMemo(frameToAAM,1);
-            }else{
-                guiB->LoadImage(frameToAAM,1,r.x + r.width/2 + modelB.xShift*r.width/100,r.y + r.height/2 + modelB.yShift*r.height/100, (double)modelB.modelScale*r.width/100, modelB.modelRot);
-            }
-
-            if (modelB.fit){
-               for (int i = 0; i < modelB.modelIterations; i++) guiB->Fit();
-            }
-
-            guiB->__model.GetShape(s,0);
-            drawAnnotation(frameToShow,s,cvScalar(0, 0, 255, 0));
-
-            for (int i = 0; i<68; i++){
-                points[0][i].x = s[2*i];
-                points[0][i].y = s[2*i+1];
-            }
-
-        }
-
-/*
-            double smile = 0;
-
-            smile = calculateSmile(s);
-
-            emit smilePercentage((int)smile);
-            if (smile > 30) emit smileDetected();
-
-
-            //drawAnnotationLines(frameToShow,s);
-        }
-
-          cvReleaseImage(&frameToAAM);
-
-          cout<<"process end"<<endl;
-          fitMutex.unlock();
-          */
-
-}
-
-void DetectorThread::paramsChanged(params newParams){
-    switch (newParams.id){
-            case 0:{
-                        modelA.inUse           = newParams.inUse;
-                        modelA.xShift          = newParams.xShift;
-                        modelA.yShift          = newParams.yShift;
-                        modelA.modelScale      = newParams.modelScale;
-                        modelA.modelRot        = newParams.modelRot;
-                        modelA.modelIterations = newParams.modelIterations;
-                        modelA.fit             = newParams.fit;
-                        modelA.memo            = newParams.memo;
-
-                        break;
-                }
-            case 1:{
-
-                        modelB.inUse           = newParams.inUse;
-                        modelB.xShift          = newParams.xShift;
-                        modelB.yShift          = newParams.yShift;
-                        modelB.modelScale      = newParams.modelScale;
-                        modelB.modelRot        = newParams.modelRot;
-                        modelB.modelIterations = newParams.modelIterations;
-                        modelB.fit             = newParams.fit;
-                        modelB.memo            = newParams.memo;
-
-
-                        break;
-                    }
-    }
-
-    newParameters = true;
-}
-
-
-
-/*
-
-  memory leak when model releasing
-
-  */
-void DetectorThread::loadModelA(QString model){
-/*
-    cout<<"LoadModelA"<<endl;
-
-    fitMutex.lock();
-
-    try{
-        delete guiA;
-        }catch(...){
-            std::cout<<"load model hiba"<<std::endl;
-        }
-
-
-    model.replace("level_0","level_#");
-
-    const char* fileName = model.toStdString().c_str();
-
-    vul_arg<const char*> dmFile(0,"Deformable model sequence fname",fileName);
-    vul_arg<const char*> imFile(0,"Image file to fit in","/home/zoltan/DeMoLib_v1_1_1/data/images/im01.jpg");
-    vul_arg<int>         nLevel("-l","Number of pyramid levels",1);
-    vul_arg<int>         filter("-f","Image filter (0=raw,1=greyscale)",1);
-    vul_arg<int>         maxIter("-i","Maximum iterations/level",20);
-    vul_arg<int>         flag("--flag","Fitting flag",0);
-    vul_arg<bool>        ascii("--ascii","Files are in ASCII format",false);
-    vul_arg<double>      iterDec("-d","Iteration decrement",1.0);
-
-    //get filenames for deformable models
-    vul_sequence_filename_map dm_map(dmFile(),0,nLevel()-1);
-
-    vcl_vector<vcl_string> dmFiles(nLevel());
-
-    for(int i = 0; i < nLevel(); i++){
-        dmFiles[i] = dm_map.image_name(i);
-    }
-
-    //create gui object
-
-    vcl_string imFname = imFile();
-
-
-    guiA = new DeMoLib_fit_gui(dmFiles,imFname,filter(),ascii());
-
-    guiA->SetMaxIter(maxIter());
-    guiA->SetDecIter(iterDec());
-    guiA->SetFitFlag(flag());
-
-    fitMutex.unlock();*/
-}
-
-void DetectorThread::loadModelB(QString model){
-/*
-
-
-    fitMutex.lock();
-
-        cout<<"LoadModelB begin"<<endl;
-try{
-            free(guiB);
-    }catch(...){
-        std::cout<<"load model hiba"<<std::endl;
-    }
-
-    model.replace("level_0","level_#");
-
-    const char* fileName = model.toStdString().c_str();
-
-    vul_arg<const char*> dmFile(0,"Deformable model sequence fname",fileName);
-    vul_arg<const char*> imFile(0,"Image file to fit in","/home/zoltan/DeMoLib_v1_1_1/data/images/im01.jpg");
-    vul_arg<int>         nLevel("-l","Number of pyramid levels",1);
-    vul_arg<int>         filter("-f","Image filter (0=raw,1=greyscale)",1);
-    vul_arg<int>         maxIter("-i","Maximum iterations/level",20);
-    vul_arg<int>         flag("--flag","Fitting flag",0);
-    vul_arg<bool>        ascii("--ascii","Files are in ASCII format",false);
-    vul_arg<double>      iterDec("-d","Iteration decrement",1.0);
-
-    //get filenames for deformable models
-    vul_sequence_filename_map dm_map(dmFile(),0,nLevel()-1);
-
-    vcl_vector<vcl_string> dmFiles(nLevel());
-
-    for(int i = 0; i < nLevel(); i++){
-        dmFiles[i] = dm_map.image_name(i);
-    }
-
-    //create gui object
-
-    vcl_string imFname = imFile();
-
-
-    guiB = new DeMoLib_fit_gui(dmFiles,imFname,filter(),ascii());
-
-    guiB->SetMaxIter(maxIter());
-    guiB->SetDecIter(iterDec());
-    guiB->SetFitFlag(flag());
-
-    cout<<"LoadModelB end"<<endl;
-
-    fitMutex.unlock();*/
 }
 
 void DetectorThread::contrastSizeChanged(int size){

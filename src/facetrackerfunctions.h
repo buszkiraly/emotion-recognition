@@ -108,11 +108,11 @@ int parse_cmd(int argc, const char** argv,
   for(i = 1; i < argc; i++){
     if(std::strcmp(argv[i],"-m") == 0){
       if(argc > i+1)std::strcpy(ftFile,argv[i+1]);
-      else strcpy(ftFile,"/home/zoltan/FaceTracker/model/face2.tracker");
+      else strcpy(ftFile,"/home/zoltan/emorec/FaceTracker/model/face2.tracker");
       break;
     }
   }
-  if(i >= argc)std::strcpy(ftFile,"/home/zoltan/FaceTracker/model/face2.tracker");
+  if(i >= argc)std::strcpy(ftFile,"/home/zoltan/emorec/FaceTracker/model/face2.tracker");
   for(i = 1; i < argc; i++){
     if(std::strcmp(argv[i],"-c") == 0){
       if(argc > i+1)std::strcpy(conFile,argv[i+1]);
@@ -120,7 +120,7 @@ int parse_cmd(int argc, const char** argv,
       break;
     }
   }
-  if(i >= argc)std::strcpy(conFile,"/home/zoltan/FaceTracker/model/face.con");
+  if(i >= argc)std::strcpy(conFile,"/home/zoltan/emorec/FaceTracker/model/face.con");
   for(i = 1; i < argc; i++){
     if(std::strcmp(argv[i],"-t") == 0){
       if(argc > i+1)std::strcpy(triFile,argv[i+1]);
@@ -128,7 +128,7 @@ int parse_cmd(int argc, const char** argv,
       break;
     }
   }
-  if(i >= argc)std::strcpy(triFile,"/home/zoltan/FaceTracker/model/face.tri");
+  if(i >= argc)std::strcpy(triFile,"/home/zoltan/emorec/FaceTracker/model/face.tri");
   return 0;
 }
 

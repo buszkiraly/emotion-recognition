@@ -42,7 +42,7 @@ void Plot::paintEvent(QPaintEvent* event)
   }
   painter.drawPolyline(QPlotPoints.data(), static_cast<int>(plotPoints.size()));
 
-  painter.setPen(Qt::blue);
+  painter.setPen(Qt::cyan);
   QPlotPoints.clear();
   for (std::vector<int>::iterator it = plotPoints2.begin(); it < plotPoints2.end(); ++it){
       QPlotPoints.push_back(QPoint(QPlotPoints.size(),235-(*it)));

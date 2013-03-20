@@ -12,26 +12,28 @@
 
 #include <Qt>
 #include <QtGui>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QObject>
 #include <capturethread.h>
 #include <detectorthread.h>
 #include <controlthread.h>
 #include "mainwindow.h"
 #include "iostream"
+#include "fstream"
 #include <stdio.h>
 #include "cv.h"
 #include "highgui.h"
 #include "structures.h"
 #include "QTime"
+#include "QTextCodec"
 
 
 using namespace std;
 
-char                    *filename_face = "/home/zoltan/haarcascades/haarcascade_frontalface_alt.xml";
-char                    *filename_eye = "/home/zoltan/haarcascades/haarcascade_eye.xml";
-char                    *filename_hand = "/home/zoltan/Dropbox/EmotionRecognition/hand_vu_classifier/config/Lback.9.xml";
-
+const char                    *filename_face = "/home/zoltan/emorec/cascades/haarcascade_frontalface_alt.xml";
+const char                    *filename_eye = "/home/zoltan/emorec/haarcascades/haarcascade_eye.xml";
+//char                    *filename_hand = "/home/zoltan/HaarTraining/Classifier/hand3/mentett/cascade.xml";
+const char                    *filename_hand = "/home/zoltan/emorec/cascades/haarcascade_eye.xml";
 CvHaarClassifierCascade *cascade_face, *cascade_eye, *cascade_hand;
 
 MainWindow              *w;
@@ -44,9 +46,31 @@ QTime *signalTime;
 QTime *captureSignalTime;
 QTime *toDetectorSignalTime;
 
+cv::Mat scale_mtx;
 
 int main(int argc, char *argv[])
 {
+
+     scale_mtx.create(132,2,CV_64F);
+
+     ifstream scale_input;
+     scale_input.open("/home/zoltan/emorec/models/xy_happy.range");
+     if (!scale_input){
+         cout << "Can't open scale file. Exiting." << endl;
+     }
+
+     string line,first, second;
+     scale_input >> line;
+     scale_input >> line;
+     scale_input >> line;
+     for (int i = 0; i < 132; i++){
+         scale_input >> line;
+         scale_input >> first;
+         scale_input >> second;
+         scale_mtx.at<double>(i,0) = atof(first.c_str());
+         scale_mtx.at<double>(i,1) = atof(second.c_str());
+         cout << i << ". " << scale_mtx.at<double>(i,0) << " " << scale_mtx.at<double>(i,1) << endl;
+     }
 
     // Time measurement
     signalTime = new QTime();
@@ -60,8 +84,8 @@ int main(int argc, char *argv[])
     con = new ControlThread();
 
     QApplication a(argc, argv);
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
-    QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+    //QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
 
     w = new MainWindow;
 
@@ -79,8 +103,8 @@ int main(int argc, char *argv[])
                       w, SLOT( enableFrameCounter()));
     QObject::connect( cap, SIGNAL( grabbingPicture()),
                       w, SLOT( disableFrameCounter()));
-    QObject::connect( cap, SIGNAL( imageCaptured2(IplImage*) ),
-        det, SLOT( newCapturedImage(IplImage*)) );
+    QObject::connect( cap, SIGNAL( imageCaptured2(IplImage*,IplImage*) ),
+        det, SLOT( newCapturedImage(IplImage*,IplImage*)) );
 
 
     QObject::connect( det, SIGNAL( imageProcessed(IplImage*) ),
@@ -163,6 +187,10 @@ int main(int argc, char *argv[])
     QObject::connect( w, SIGNAL( selectedDevice(int)) ,
         cap, SLOT( selectedDevice(int)));
 
+/*
+    cascade_hand.load( filename_hand );
+    cascade_face.load( filename_face );
+*/
 
     cascade_face = ( CvHaarClassifierCascade* )cvLoad( filename_face, 0, 0, 0 );
     cascade_eye = ( CvHaarClassifierCascade* )cvLoad( filename_eye, 0, 0, 0 );

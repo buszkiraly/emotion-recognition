@@ -19,7 +19,7 @@ public:
     ~Plot();
 
 public slots:
-    void paintEvent(QPaintEvent* event);
+    void paintEvent(QPaintEvent *event);
     void points(std::vector<int> points,std::vector<int> points2);
 
     

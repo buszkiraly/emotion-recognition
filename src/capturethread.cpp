@@ -2,7 +2,7 @@
 #include "iostream"
 #include <QTime>
 #include <QMutex>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QDateTime>
 #include <QTime>
 
@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/videodev.h>
 
 using namespace std;
 
@@ -21,9 +20,6 @@ extern QTime *captureSignalTime;
 extern QTime *toDetectorSignalTime;
 
 CaptureThread::CaptureThread(){
-
-
-
 
     int fd;
     char name[100];
@@ -78,7 +74,8 @@ CaptureThread::CaptureThread(){
     picture = false;
 
     captureVid = NULL;
-    captureCam = NULL;
+    captureCamLeft = NULL;
+    captureCamRight = NULL;
 
     framePos = 0;
 
@@ -138,7 +135,8 @@ void CaptureThread::run(){
 
     }
 
-    cvReleaseCapture( &captureCam );
+    cvReleaseCapture( &captureCamLeft );
+    cvReleaseCapture( &captureCamRight );
     cvReleaseCapture( &captureVid );
     cvReleaseHaarClassifierCascade( &cascade_face );
 }
@@ -190,7 +188,8 @@ void CaptureThread::changingToVideo(){
 
     captureVid = NULL;
     captureVid = cvCaptureFromAVI( videoSourceAddress.toStdString().c_str() );
-    cvReleaseCapture(&captureCam);
+    cvReleaseCapture(&captureCamLeft);
+    cvReleaseCapture(&captureCamRight);
 
     if (!captureVid) {
         cout<<"Couldn't grab video file"<<endl;
@@ -210,20 +209,34 @@ void CaptureThread::changingToCamera(){
     video = false;
     changeToCamera = false;
 
-    if (captureCam){
-        cvReleaseCapture(&captureCam);
+    if (captureCamLeft){
+        cvReleaseCapture(&captureCamLeft);
+    }
+    if (captureCamRight){
+        cvReleaseCapture(&captureCamRight);
     }
 
-    captureCam = NULL;
+    captureCamLeft = NULL;
+    captureCamRight = NULL;
 
 
-    captureCam = cvCaptureFromCAM( dev );
+    captureCamLeft = cvCaptureFromCAM( 1 );
+    captureCamRight = cvCaptureFromCAM( 2 );
 
     cvReleaseCapture(&captureVid);
-    if (!captureCam){
+    if (!captureCamLeft){
         cout<<"Coudn't grab camera"<<endl;
         return;
     }
+    if (!captureCamRight){
+        cout<<"Coudn't grab camera"<<endl;
+        return;
+    }
+
+    cvSetCaptureProperty(captureCamLeft,CV_CAP_PROP_FRAME_WIDTH,640);
+    cvSetCaptureProperty(captureCamLeft,CV_CAP_PROP_FRAME_HEIGHT,480);
+    cvSetCaptureProperty(captureCamRight,CV_CAP_PROP_FRAME_WIDTH,640);
+    cvSetCaptureProperty(captureCamRight,CV_CAP_PROP_FRAME_HEIGHT,480);
 
     camera = true;
     waitForProcessing = false;
@@ -235,8 +248,11 @@ void CaptureThread::changingToCamera(){
 
 void CaptureThread::changingToPicture(){
 
-    if (captureCam){
-        cvReleaseCapture(&captureCam);
+    if (captureCamLeft){
+        cvReleaseCapture(&captureCamLeft);
+    }
+    if (captureCamRight){
+        cvReleaseCapture(&captureCamRight);
     }
 
     changeToPicture = false;
@@ -259,7 +275,8 @@ void CaptureThread::grabFrame(){
         frame = NULL;
 
         seekMutex.lock();
-        frame = cvQueryFrame( captureCam );
+        frame = cvQueryFrame( captureCamLeft );
+        frame_right = cvQueryFrame( captureCamRight );
         seekMutex.unlock();
 
         if (!frame) {
@@ -389,6 +406,8 @@ void CaptureThread::sendImage(){
 
     IplImage *frameToSend = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
     cvCopy(frame, frameToSend);
+    IplImage *frameToSendRight = cvCreateImage( cvSize(frame_right->width , frame_right->height ), frame_right->depth, frame_right->nChannels );
+    cvCopy(frame_right, frameToSendRight);
     emit imageCaptured(frameToSend);
 
     IplImage *frameToSend2 = cvCreateImage( cvSize(frame->width , frame->height ), frame->depth, frame->nChannels );
@@ -398,7 +417,7 @@ void CaptureThread::sendImage(){
     toDetectorSignalTime->start();
 
 
-    emit imageCaptured2(frameToSend2);
+    emit imageCaptured2(frameToSend2, frameToSendRight);
 
 }
 

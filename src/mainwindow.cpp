@@ -15,7 +15,6 @@
 #include <QTime>
 #include <QPlainTextEdit>
 #include <QTime>
-#include <QSound>
 #include <QFileDialog>
 #include <QMessageBox>
 #include "structures.h"
@@ -41,28 +40,11 @@ MainWindow::MainWindow(QWidget *parent) :
     functionTimer = new QTime();
 
 
-    /*********************** removing unnecessary components for the demo *********************************/
-  /*
-    ui->forwardButton->setVisible(false);
-    ui->frameCounter->setVisible(false);
-    ui->pushButton_13->setVisible(false);
-    ui->pushButton_14->setVisible(false);
-    ui->rewindButton->setVisible(false);
-    ui->stopButton->setVisible(false);
-    ui->videoProgress->setVisible(false);
-*/
     ui->pushButton_11->setVisible(false);
     ui->blackA->setVisible(false);
     ui->recordA->setVisible(false);
     ui->contrastLabel->setVisible(false);
     ui->contrastSizeA->setVisible(false);
-/*
-    ui->tabWidget->setTabEnabled(0,false);
-    ui->tabWidget->setTabEnabled(1,false);
-    */
-    /****************************************************************************************/
-
-
 
     ui->progressBar->setValue(0);
 
@@ -91,24 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     det_framenumber = 0;
     cap_framenumber = 0;
-/*
-    IplImage *frame = cvLoadImage("/home/zoltan/DeMoLib_v1_1_1/Hypocrite.jpg",-1);
 
-    cvCvtColor(frame,frame,CV_BGR2RGB);
-
-    QImage* image = new QImage(320, 240, QImage::Format_ARGB32);
-    *image = QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
-
-    ui->labelCap->setPixmap(QPixmap::fromImage(*image));
-    ui->labelCap->show();
-
-    ui->labelDet->setPixmap(QPixmap::fromImage(*image));
-    ui->labelDet->show();
-
-    ui->frameCounter->setVisible(false);
-
-    cvReleaseImage(&frame);
-*/
 }
 
 MainWindow::~MainWindow()
@@ -187,11 +152,11 @@ void MainWindow::clickedPicture(){
     emit pictureSource(fileName);
 }
 
-void MainWindow::append(char* toAppend){
+void MainWindow::append(const char* toAppend){
 
     QString *qAppend = new QString( toAppend );
 
-    if ( (toAppend == "a") || (toAppend == "b") || (toAppend == "c") ){
+    if ( (toAppend[0] == 'a') || (toAppend[0] == 'b') || (toAppend[0] == 'c') ){
         ui->chocolate->setPlainText(*qAppend);
     }
     else{
@@ -224,16 +189,18 @@ void MainWindow::setDetectedImage(IplImage *img){
     cvResize(img, frame);
     cvCvtColor(frame,frame,CV_BGR2RGB);
 
-    int h = frame->height;
-    int w = frame->width;
     QImage* image = new QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
 
     det_framenumber++;
 
     if (det_framenumber == 5){
         det_elapsed = det_timer->elapsed();
-        det_fps = 5000/det_elapsed;
-        det_fps_str = det_fps_str.setNum(det_fps);
+        if (det_elapsed) {
+            det_fps = 5000/det_elapsed;
+            det_fps_str = det_fps_str.setNum(det_fps);
+        }else{
+            det_fps_str = "-";
+        }
         det_framenumber = 0;
         det_timer->start();
     }
@@ -265,16 +232,18 @@ void MainWindow::setCapturedImage(IplImage*  img){
     cvResize(img, frame);
     cvCvtColor(frame,frame,CV_BGR2RGB);
 
-    int h = frame->height;
-    int w = frame->width;
     QImage* image = new QImage((unsigned char *)frame->imageData,frame->width,frame->height,QImage::Format_RGB888);
 
     cap_framenumber++;
 
     if (cap_framenumber == 5){
         cap_elapsed = cap_timer->elapsed();
-        cap_fps = 5000/cap_elapsed;
-        cap_fps_str = cap_fps_str.setNum(cap_fps);
+        if (cap_elapsed) {
+            cap_fps = 5000/cap_elapsed;
+            cap_fps_str = cap_fps_str.setNum(cap_fps);
+        }else{
+            cap_fps_str = "-";
+        }
         cap_framenumber = 0;
         cap_timer->start();
     }
@@ -294,302 +263,6 @@ void MainWindow::setCapturedImage(IplImage*  img){
 
 void MainWindow::smilePercentage(int perc){
     ui->smileProgress->setValue(perc);
-}
-
-void MainWindow::inUseChangedA(bool){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-void MainWindow::xShiftChangedA(int){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::yShiftChangedA(int){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelScaleChangedA(double){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelRotChangedA(double){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelIterationsChangedA(int){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::fitChangedA(bool){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::memoFitChangedA(bool){
-    struct params newParams;
-
-    newParams.id                = 0;
-    newParams.inUse             = ui->inUseA->isChecked();
-    newParams.xShift            = ui->xShiftA->value();
-    newParams.yShift            = ui->yShiftA->value();
-    newParams.modelScale        = ui->modelScaleA->value();
-    newParams.modelRot          = ui->modelRotA->value();
-    newParams.modelIterations   = ui->modelIterationsA->value();
-    newParams.fit               = ui->modelFitA->isChecked();
-    newParams.memo              = ui->memoFitA->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::inUseChangedB(bool){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-void MainWindow::xShiftChangedB(int){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::yShiftChangedB(int){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelScaleChangedB(double){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelRotChangedB(double){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::modelIterationsChangedB(int){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::fitChangedB(bool){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::memoFitChangedB(bool){
-    struct params newParams;
-
-    newParams.id                = 1;
-    newParams.inUse             = ui->inUseB->isChecked();
-    newParams.xShift            = ui->xShiftB->value();
-    newParams.yShift            = ui->yShiftB->value();
-    newParams.modelScale        = ui->modelScaleB->value();
-    newParams.modelRot          = ui->modelRotB->value();
-    newParams.modelIterations   = ui->modelIterationsB->value();
-    newParams.fit               = ui->modelFitB->isChecked();
-    newParams.memo              = ui->memoFitB->isChecked();
-
-    emit paramsChanged(newParams);
-}
-
-void MainWindow::initParams(params modelA,
-                            params modelB){
-
-
-    ui->inUseA->setChecked(modelA.inUse);
-    ui->xShiftA->setValue(modelA.xShift);
-    ui->yShiftA->setValue(modelA.yShift);
-    ui->modelScaleA->setValue(modelA.modelScale);
-    ui->modelRotA->setValue(modelA.modelRot);
-    ui->modelIterationsA->setValue(modelA.modelIterations);
-    ui->modelFitA->setChecked(modelA.fit);
-    ui->memoFitA->setChecked(modelA.memo);
-
-    ui->inUseB->setChecked(modelB.inUse);
-    ui->xShiftB->setValue(modelB.xShift);
-    ui->yShiftB->setValue(modelB.yShift);
-    ui->modelScaleB->setValue(modelB.modelScale);
-    ui->modelRotB->setValue(modelB.modelRot);
-    ui->modelIterationsB->setValue(modelB.modelIterations);
-    ui->modelFitB->setChecked(modelB.fit);
-    ui->memoFitB->setChecked(modelB.memo);
-
-}
-
-void MainWindow::clickedLoadModelA(){
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                     "/home/zoltan/DeMoLib_v1_1_1",
-                                                     tr("model files (*.*)"));
-    if (fileName.isEmpty()) return;
-
-    emit loadModelA(fileName);
-}
-
-void MainWindow::clickedLoadModelB(){
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                     "/home/zoltan/DeMoLib_v1_1_1",
-                                                     tr("model files (*.*)"));
-    if (fileName.isEmpty()) return;
-
-    emit loadModelB(fileName);
 }
 
 void MainWindow::clickedStop(){
@@ -661,23 +334,9 @@ void MainWindow::incomingHeadPoseCoords(double x, double y)
     emit outGoingHeadPoseCoords(x,y);
 }
 
-void MainWindow::on_pushButton_10_clicked()
-{
-
-}
-
-void MainWindow::on_pushButton_10_clicked(bool checked)
-{
-
-}
-
 void MainWindow::on_horizontalSlider_valueChanged(int value)
 {
     emit smileCutOff(value);
-}
-
-void MainWindow::smileValue(int value){
-   // ui->progressBar->setValue(100);
 }
 
 void MainWindow::on_pushButton_15_clicked()
@@ -734,12 +393,3 @@ void MainWindow::on_comboBox_2_currentIndexChanged(int index)
     emit selectedDevice(index-1);
 }
 
-void MainWindow::on_pushButton_12_clicked()
-{
-
-}
-
-void MainWindow::on_pushButton_12_clicked(bool checked)
-{
-
-}
